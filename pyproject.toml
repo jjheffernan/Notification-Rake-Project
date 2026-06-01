@@ -1,0 +1,54 @@
+[project]
+name = "notification-rake"
+version = "0.1.0"
+description = "Vehicle listing ingestion, geospatial search, and notifications"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "psycopg[binary]>=3.2",
+    "flask>=3.1",
+    "gunicorn>=23",
+    "jinja2>=3.1",
+]
+
+[project.scripts]
+notification-rake = "notification_rake:main"
+
+[tool.notification-rake]
+# Keep in sync with src/notification_rake/config.py defaults and .env.example
+scripts-dir = "scripts"
+default-command = "health"
+compose-file = "docker-compose.yml"
+core-services = ["db", "hasura", "gotify", "meilisearch", "dashboard"]
+dev-profile = "dev-tools"
+dev-services = ["jupyter", "adminer", "metabase", "grafana", "prometheus"]
+container-scripts-dir = "/app/scripts"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.9",
+    "jupyterlab>=4.3",
+    "pandas>=2.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/notification_rake"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
