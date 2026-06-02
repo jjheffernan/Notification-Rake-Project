@@ -1,0 +1,43 @@
+{
+  "ResultSet": {
+    "totalResultsAvailable": 142,
+    "totalResultsReturned": 3,
+    "firstResultPosition": 1,
+    "Result": {
+      "Item": [
+        {
+          "AuctionID": "v1200000001",
+          "Title": "平成15年 日産 スカイライン 350GT 走行8万km",
+          "CurrentPrice": 850000,
+          "BidOrBuy": 1200000,
+          "Bids": 4,
+          "EndTime": "2026-07-01T12:00:00+09:00",
+          "CategoryID": "26360",
+          "Image": "https://example.yahoo/img/skyline.jpg",
+          "Location": { "Prefecture": "神奈川県" }
+        },
+        {
+          "AuctionID": "v1200000002",
+          "Title": "トヨタ スープラ SZ-R 2JZ 6MT 美車",
+          "CurrentPrice": 4200000,
+          "BidOrBuy": 4800000,
+          "Bids": 18,
+          "EndTime": "2026-06-28T20:30:00+09:00",
+          "CategoryID": "26360",
+          "Image": "https://example.yahoo/img/supra.jpg",
+          "Location": { "Prefecture": "愛知県" }
+        },
+        {
+          "AuctionID": "v1200000003",
+          "Title": "ホンダ S2000 AP1 6MT 赤 修復歴なし",
+          "CurrentPrice": 2100000,
+          "Bids": 7,
+          "EndTime": "2026-06-30T09:15:00+09:00",
+          "CategoryID": "26360",
+          "Image": "https://example.yahoo/img/s2000.jpg",
+          "Location": { "Prefecture": "大阪府" }
+        }
+      ]
+    }
+  }
+}

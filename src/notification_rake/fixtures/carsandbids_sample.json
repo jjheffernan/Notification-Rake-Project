@@ -1,0 +1,93 @@
+{
+  "total": 4,
+  "items": [
+    {
+      "auction_id": "cab-001",
+      "title": "1998 Nissan Stagea 260RS Autech",
+      "make": "Nissan",
+      "model": "Stagea",
+      "year": 1998,
+      "mileage": 89000,
+      "current_bid": 28500,
+      "sold_price": null,
+      "auction_status": "live",
+      "ends_at": "2026-06-28T22:00:00Z",
+      "bid_count": 42,
+      "reserve_met": false,
+      "location": "Portland, OR",
+      "latitude": 45.5152,
+      "longitude": -122.6784,
+      "country": "US",
+      "image_urls": [
+        "https://media.carsandbids.com/cdn-cgi/image/width=1920,quality=80/stagea-001-hero.jpg"
+      ],
+      "listing_url": "https://carsandbids.com/auctions/cab-001"
+    },
+    {
+      "auction_id": "cab-002",
+      "title": "2004 BMW M3 Coupe",
+      "make": "BMW",
+      "model": "M3",
+      "year": 2004,
+      "mileage": 72000,
+      "current_bid": null,
+      "sold_price": 36800,
+      "auction_status": "sold",
+      "ends_at": "2026-06-20T18:30:00Z",
+      "bid_count": 67,
+      "reserve_met": true,
+      "location": "Austin, TX",
+      "latitude": 30.2672,
+      "longitude": -97.7431,
+      "country": "US",
+      "image_urls": [
+        "https://media.carsandbids.com/cdn-cgi/image/width=1920,quality=80/m3-002-hero.jpg"
+      ],
+      "listing_url": "https://carsandbids.com/auctions/cab-002"
+    },
+    {
+      "auction_id": "cab-003",
+      "title": "1995 Toyota Supra Turbo 6-Speed",
+      "make": "Toyota",
+      "model": "Supra",
+      "year": 1995,
+      "mileage": 98000,
+      "current_bid": 62000,
+      "sold_price": null,
+      "auction_status": "live",
+      "ends_at": "2026-06-29T01:00:00Z",
+      "bid_count": 128,
+      "reserve_met": false,
+      "location": "Los Angeles, CA",
+      "latitude": 34.0522,
+      "longitude": -118.2437,
+      "country": "US",
+      "image_urls": [
+        "https://media.carsandbids.com/cdn-cgi/image/width=1920,quality=80/supra-003-hero.jpg"
+      ],
+      "listing_url": "https://carsandbids.com/auctions/cab-003"
+    },
+    {
+      "auction_id": "cab-004",
+      "title": "2011 Porsche 911 Carrera S",
+      "make": "Porsche",
+      "model": "911",
+      "year": 2011,
+      "mileage": 54000,
+      "current_bid": null,
+      "sold_price": 74250,
+      "auction_status": "sold",
+      "ends_at": "2026-06-15T20:00:00Z",
+      "bid_count": 55,
+      "reserve_met": true,
+      "location": "Miami, FL",
+      "latitude": 25.7617,
+      "longitude": -80.1918,
+      "country": "US",
+      "image_urls": [
+        "https://media.carsandbids.com/cdn-cgi/image/width=1920,quality=80/911-004-hero.jpg"
+      ],
+      "listing_url": "https://carsandbids.com/auctions/cab-004"
+    }
+  ]
+}
