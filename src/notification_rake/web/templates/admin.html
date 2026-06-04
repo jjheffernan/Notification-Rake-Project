@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/rake.css" />
+  <link rel="stylesheet" href="/static/dashboard.css" />
+</head>
+<body class="ui-shell">
+  <header class="topbar">
+    <div class="brand">Notification Rake · Admin Console</div>
+    <nav>
+      <a href="/">Public dashboard</a>
+      <button type="button" id="refresh-btn" class="link-button">Refresh status</button>
+      <form method="post" action="/admin/logout" class="inline-form">
+        <button type="submit" class="link-button">Sign out</button>
+      </form>
+    </nav>
+  </header>
+
+  <main class="admin-layout">
+    {% if flash %}
+    <div class="flash {{ 'flash-ok' if flash.ok else 'flash-err' }}">{{ flash.message }}</div>
+    {% endif %}
+
+    <section>
+      <h1>Stack health</h1>
+      <p class="subtitle">Live status of backend services — refresh or open native consoles.</p>
+      <div id="service-grid" class="service-grid">
+        {% for svc in overview.services %}
+        <article class="service-card status-{{ svc.status }}" data-service="{{ svc.key }}">
+          <div class="service-head">
+            <span class="status-dot"></span>
+            <h2>{{ svc.label }}</h2>
+          </div>
+          <p class="service-detail">{{ svc.detail }}</p>
+          <p class="service-url"><code>{{ svc.url }}</code></p>
+          {% if svc.console_url %}
+          <a class="btn-secondary" href="{{ svc.console_url }}" target="_blank" rel="noopener">Open console</a>
+          {% endif %}
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="admin-grid">
+      <div>
+        <h2>Runtime actions</h2>
+        <p class="subtitle">Execute pipeline tasks without shell access.</p>
+        <div class="action-grid">
+          {% for action in overview.actions %}
+          <form method="post" action="/admin/actions/{{ action }}" class="action-form">
+            <button type="submit" class="btn-action" data-action="{{ action }}">{{ action }}</button>
+          </form>
+          {% endfor %}
+        </div>
+        <p id="action-result" class="action-result" hidden></p>
+      </div>
+
+      <div>
+        <h2>Database layers</h2>
+        <dl class="stats-dl" id="layer-stats">
+          <div><dt>Search listings</dt><dd>{{ overview.layers.search_listings }}</dd></div>
+          <div><dt>Raw listings</dt><dd>{{ overview.layers.raw_listings }}</dd></div>
+          <div><dt>Catalog models</dt><dd>{{ overview.layers.catalog_models }}</dd></div>
+          <div><dt>Job runs</dt><dd>{{ overview.layers.job_runs }}</dd></div>
+          <div><dt>Sources</dt><dd>{{ overview.layers.sources }}</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section>
+      <h2>Ingestion sources</h2>
+      <table class="jobs-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Status</th>
+            <th>Last run</th>
+            <th>Seen</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sources-body">
+          {% for src in overview.sources %}
+          <tr>
+            <td><strong>{{ src.name }}</strong>{% if src.base_url %}<br><small>{{ src.base_url }}</small>{% endif %}</td>
+            <td class="{{ 'status-success' if src.enabled else 'status-failed' }}">{{ "enabled" if src.enabled else "disabled" }}</td>
+            <td>{{ src.last_run_at or "—" }} {% if src.last_status %}<br><small>{{ src.last_status }}</small>{% endif %}</td>
+            <td>{{ src.listings_seen }}</td>
+            <td>
+              <form method="post" action="/admin/sources/{{ src.id }}/toggle" class="inline-form">
+                <input type="hidden" name="enabled" value="{{ 'false' if src.enabled else 'true' }}" />
+                <button type="submit" class="btn-secondary">{{ "Disable" if src.enabled else "Enable" }}</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5">No sources — run pipeline to seed craigslist.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="admin-grid">
+      <div>
+        <h2>Add catalog model</h2>
+        <form method="post" action="/admin/catalog" class="catalog-form">
+          <label>Make<input name="make" required placeholder="Toyota" /></label>
+          <label>Model<input name="model" required placeholder="Supra" /></label>
+          <button type="submit">Add to reference catalog</button>
+        </form>
+      </div>
+      <div>
+        <h2>Recent syncs</h2>
+        <ul class="sync-list" id="sync-list">
+          {% for sync in overview.syncs %}
+          <li><strong>{{ sync.layer }}</strong> — {{ sync.records_synced }} rows <small>{{ sync.notes }}</small></li>
+          {% else %}
+          <li>No sync events yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>Job history</h2>
+      <table class="jobs-table" id="jobs-table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Status</th>
+            <th>Started</th>
+            <th>Fetched</th>
+            <th>New</th>
+            <th>Upserted</th>
+            <th>Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in overview.jobs %}
+          <tr>
+            <td>{{ job.job_name }}</td>
+            <td class="status-{{ job.status }}">{{ job.status }}</td>
+            <td>{{ job.started_at }}</td>
+            <td>{{ job.fetched or "—" }}</td>
+            <td>{{ job.new_listings or "—" }}</td>
+            <td>{{ job.upserted or "—" }}</td>
+            <td>{{ job.error_message or "—" }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7">No jobs recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/static/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{% extends "partials/base.html" %}
+{% block styles %}
+  <link rel="stylesheet" href="/static/dashboard.css" />
+{% endblock %}
+{% block body %}
+  <main class="ui-main ui-page--narrow accounts-page">
+    <section class="ui-hero accounts-hero">
+      <h1 class="ui-page-title">Connected accounts</h1>
+      <p class="subtitle">
+        Link Buyee, eBay, Yahoo.jp, Craigslist, Copart, Cars &amp; Bids, Gumtree, AutoScout24,
+        mobile.de, and other sources. Sync pulls your watchlists into the main index.
+      </p>
+      <p id="accounts-status" class="ui-status" aria-live="polite"></p>
+    </section>
+
+    <section class="ui-grid ui-grid--2 accounts-layout">
+      <article class="ui-panel accounts-card">
+        <h2 class="ui-panel__title">Your connections</h2>
+        <div id="accounts-list" class="ui-list accounts-list"></div>
+        <button type="button" id="sync-accounts-btn" class="ui-btn ui-btn--secondary">Sync all accounts</button>
+      </article>
+
+      <article class="ui-panel accounts-card">
+        <h2 class="ui-panel__title">Add account</h2>
+        <form id="account-form" class="ui-form account-form">
+          <div class="ui-field">
+            <label for="account-provider">Provider</label>
+            <select class="ui-select" name="provider" id="account-provider" required>
+              <option value="">Provider…</option>
+              {% for p in account_providers %}
+              <option value="{{ p }}">{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="ui-field">
+            <label for="account-label">Label</label>
+            <input class="ui-input" name="label" id="account-label" placeholder="Optional label" />
+          </div>
+          <div class="ui-field">
+            <label for="account-config">Config (JSON)</label>
+            <textarea class="ui-textarea" name="config" id="account-config" rows="6" placeholder='{"rss_url":"..."} or {"query":"スカイライン"}'></textarea>
+          </div>
+          <div class="action-row">
+            <button type="submit" class="ui-btn ui-btn--primary">Connect account</button>
+          </div>
+        </form>
+        <details class="accounts-help">
+          <summary>Example configs</summary>
+          <ul class="hint-list">
+            <li><strong>craigslist</strong> — <code>{"rss_url":"https://sfbay.craigslist.org/search/cta?format=rss&query=toyota"}</code></li>
+            <li><strong>yahoo_auctions_jp</strong> — <code>{"query":"スカイライン","max_pages":1}</code></li>
+            <li><strong>carsandbids</strong> — <code>{"query":"Stagea","mode":"active","limit":20}</code></li>
+            <li><strong>copart</strong> — <code>{"query":"toyota","state":"CA","limit":50}</code></li>
+          </ul>
+        </details>
+      </article>
+    </section>
+  </main>
+{% endblock %}
+{% block scripts %}
+  <script src="/static/accounts.js"></script>
+{% endblock %}

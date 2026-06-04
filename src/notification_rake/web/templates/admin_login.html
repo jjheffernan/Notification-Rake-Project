@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/rake.css" />
+  <link rel="stylesheet" href="/static/dashboard.css" />
+</head>
+<body class="ui-shell auth-page">
+  <main class="ui-panel auth-card">
+    <h1 class="ui-page-title">Admin sign in</h1>
+    <p class="subtitle">Public browsing does not require an account.</p>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form class="ui-form" method="post" action="/admin/login">
+      <div class="ui-field">
+        <label>Username<input class="ui-input" name="username" required autocomplete="username" /></label>
+      </div>
+      <div class="ui-field">
+        <label>Password<input class="ui-input" name="password" type="password" required autocomplete="current-password" /></label>
+      </div>
+      <button type="submit" class="ui-btn ui-btn--primary">Sign in</button>
+    </form>
+    <p><a href="/">← Back to listings</a></p>
+  </main>
+</body>
+</html>

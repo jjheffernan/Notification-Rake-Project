@@ -1,0 +1,11 @@
+<header class="topbar">
+  <div class="brand">Notification Rake</div>
+  <button type="button" class="topbar__toggle" data-nav-toggle aria-expanded="false" aria-label="Open menu">Menu</button>
+  <nav>
+    <a href="/"{% if nav_active == "search" %} class="active"{% endif %}>Search</a>
+    <a href="/m"{% if nav_active == "market" %} class="active"{% endif %}>Market data</a>
+    <a href="/watchlist"{% if nav_active == "watchlist" %} class="active"{% endif %}>Watchlist</a>
+    <a href="/accounts"{% if nav_active == "accounts" %} class="active"{% endif %}>Accounts</a>
+    <a href="/admin/login" class="admin-link">Admin</a>
+  </nav>
+</header>

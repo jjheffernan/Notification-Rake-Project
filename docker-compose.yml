@@ -1,0 +1,164 @@
+# Local dev — localhost ports only; env from .env (see .env.example)
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    env_file: .env
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  hasura:
+    image: hasura/graphql-engine:v2.40.0
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
+
+  gotify:
+    image: gotify/server:2.6.0
+    env_file: .env
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      GOTIFY_DEFAULTUSER_PASS: ${GOTIFY_ADMIN_PASS}
+    volumes:
+      - gotify_data:/app/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    env_file: .env
+    ports:
+      - "127.0.0.1:7700:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-change-me-dev-key}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: dashboard
+    env_file: .env
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: app
+    env_file: .env
+    environment:
+      RAKE_SCRIPTS_DIR: /app/scripts
+    depends_on:
+      db:
+        condition: service_healthy
+      hasura:
+        condition: service_started
+      meilisearch:
+        condition: service_started
+
+  adminer:
+    profiles: [dev-tools]
+    image: adminer:4
+    ports:
+      - "127.0.0.1:8082:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  metabase:
+    profiles: [dev-tools]
+    image: metabase/metabase:v0.53.4
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file: .env
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: db
+      MB_DB_PORT: 5432
+      MB_DB_DBNAME: metabase
+      MB_DB_USER: ${POSTGRES_USER}
+      MB_DB_PASS: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - metabase_data:/metabase-data
+
+  prometheus:
+    profiles: [dev-tools]
+    image: prom/prometheus:v3.2.1
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    profiles: [dev-tools]
+    image: grafana/grafana:11.5.2
+    ports:
+      - "127.0.0.1:3001:3000"
+    env_file: .env
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+  jupyter:
+    profiles: [dev-tools]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: jupyter
+    env_file: .env
+    ports:
+      - "127.0.0.1:${JUPYTER_PORT}:8888"
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN}
+    volumes:
+      - ./src:/app/src
+      - ./notebooks:/app/notebooks
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  gotify_data:
+  meilisearch_data:
+  metabase_data:
+  prometheus_data:
+  grafana_data:

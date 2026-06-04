@@ -1,0 +1,113 @@
+{% extends "partials/base.html" %}
+{% block styles %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="/static/dashboard.css" />
+{% endblock %}
+{% block body %}
+  <main class="ui-main ui-page--wide search-layout">
+    <section class="search-panel ui-hero">
+      <h1 class="ui-page-title">All listings. One search.</h1>
+      <p class="subtitle">Multi-source market view — filter, map, and price history. No sign-in required.</p>
+
+      <form id="search-form" class="ui-form search-form ui-panel">
+        <div class="ui-field">
+          <input class="ui-input ui-search-input" type="search" name="q" id="q" placeholder="Model, make, VIN, keywords…" autocomplete="off" />
+        </div>
+        <div class="ui-field-row filter-row">
+          <div class="ui-field"><input class="ui-input" name="make" id="make" placeholder="Make" /></div>
+          <div class="ui-field"><input class="ui-input" name="model" id="model" placeholder="Model" /></div>
+          <div class="ui-field">
+            <select class="ui-select" name="route" id="route" aria-label="Ingest route">
+              <option value="">All routes</option>
+            </select>
+          </div>
+          <div class="ui-field">
+            <select class="ui-select" name="source" id="source">
+              <option value="">All sources</option>
+            </select>
+          </div>
+        </div>
+        <div class="ui-field-row filter-row">
+          <div class="ui-field"><input class="ui-input" name="year_min" id="year_min" type="number" placeholder="Year min" /></div>
+          <div class="ui-field"><input class="ui-input" name="year_max" id="year_max" type="number" placeholder="Year max" /></div>
+          <div class="ui-field"><input class="ui-input" name="price_min" id="price_min" type="number" placeholder="Price min" /></div>
+          <div class="ui-field"><input class="ui-input" name="price_max" id="price_max" type="number" placeholder="Price max" /></div>
+        </div>
+        <div class="filter-row import-rules">
+          <label class="checkbox-label">
+            <input type="checkbox" name="import_us" id="import_us" value="1" />
+            US import eligible (25+ yr rule)
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="import_ca" id="import_ca" value="1" />
+            Canada import eligible (15+ yr rule)
+          </label>
+        </div>
+        <div class="ui-field-row filter-row">
+          <div class="ui-field">
+            <select class="ui-select" name="country" id="country" aria-label="Region">
+              <option value="">All regions</option>
+              {% for r in regions %}
+              <option value="{{ r.code }}" data-lat="{{ r.lat }}" data-lon="{{ r.lon }}">{{ r.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="ui-field"><input class="ui-input" name="radius_km" id="radius_km" type="number" value="50" min="1" max="500" /></div>
+          <div class="ui-field">
+            <select class="ui-select" name="sort" id="sort">
+              <option value="updated_desc">Newest</option>
+              <option value="price_asc">Price ↑</option>
+              <option value="price_desc">Price ↓</option>
+              <option value="year_desc">Year ↓</option>
+              <option value="distance">Distance</option>
+            </select>
+          </div>
+        </div>
+        <span class="hint">km radius from search center — pan the map to explore loaded pins</span>
+        <div class="action-row">
+          <button type="submit" class="ui-btn ui-btn--primary">Search</button>
+          <button type="button" id="save-search-btn" class="ui-btn ui-btn--secondary">Save search</button>
+          <div class="ui-segment view-switch" role="group" aria-label="Results layout">
+            <button type="button" class="ui-segment__btn view-btn active" data-view="split">Split</button>
+            <button type="button" class="ui-segment__btn view-btn" data-view="list">List</button>
+            <button type="button" class="ui-segment__btn view-btn" data-view="map">Map</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="market-summary" class="market-summary"></div>
+      <p id="stats" class="ui-status stats"></p>
+    </section>
+
+    <section id="results-section" class="results-section view-split">
+      <div id="map-panel" class="map-panel">
+        <div id="map"></div>
+        <button type="button" id="search-area-btn" class="ui-btn ui-btn--secondary search-area-btn hidden">Search this area</button>
+      </div>
+
+      <div id="results-panel" class="results-panel">
+        <div id="source-tabs" class="source-tabs ui-segment"></div>
+        <div id="feed" class="feed ui-grid ui-grid--3" aria-live="polite"></div>
+        <div id="sentinel" class="sentinel">Loading…</div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="detail-dialog" class="ui-dialog">
+    <article id="detail-content"></article>
+    <form method="dialog"><button class="ui-btn ui-btn--secondary">Close</button></form>
+  </dialog>
+{% endblock %}
+{% block head_extra %}{% endblock %}
+{% block scripts %}
+  <script>
+    window.RAKE_DEFAULT = { lat: {{ default_lat }}, lon: {{ default_lon }} };
+    window.RAKE_REGIONS = {
+      {% for r in regions %}
+      "{{ r.code }}": { lat: {{ r.lat }}, lon: {{ r.lon }}, label: "{{ r.label }}" }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    };
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/static/dashboard.js"></script>
+{% endblock %}
