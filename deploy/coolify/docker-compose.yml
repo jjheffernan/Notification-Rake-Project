@@ -1,0 +1,60 @@
+# Coolify production — see docs/deploy.md
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-rake}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../../db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  hasura:
+    image: hasura/graphql-engine:v2.40.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rake}
+      HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_ENABLE_CONSOLE:-false}
+      HASURA_GRAPHQL_DEV_MODE: "false"
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_ADMIN_SECRET:?set HASURA_ADMIN_SECRET}
+    labels:
+      - traefik.enable=true
+
+  gotify:
+    image: gotify/server:2.6.0
+    restart: unless-stopped
+    environment:
+      GOTIFY_DEFAULTUSER_PASS: ${GOTIFY_ADMIN_PASS:?set GOTIFY_ADMIN_PASS}
+    volumes:
+      - gotify_data:/app/data
+    labels:
+      - traefik.enable=true
+
+  jupyter:
+    profiles: [dev-tools]
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?set JUPYTER_TOKEN}
+    volumes:
+      - ../../notebooks:/app/notebooks
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  gotify_data:
