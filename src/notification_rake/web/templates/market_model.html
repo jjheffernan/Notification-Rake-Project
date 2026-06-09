@@ -1,0 +1,94 @@
+{% extends "partials/base.html" %}
+{% block styles %}
+  <link rel="stylesheet" href="/static/market.css" />
+{% endblock %}
+{% block head_extra %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+{% endblock %}
+{% block body %}
+  <main class="ui-main market-page">
+    <nav class="breadcrumb">
+      <a href="/m">Market data</a>
+      <span>/</span>
+      <span id="bc-make">{{ make_label }}</span>
+      <span>/</span>
+      <span id="bc-model">{{ model_label }}</span>
+    </nav>
+
+    <section class="ui-hero model-hero">
+      <div class="ui-hero__row hero-row">
+        <div>
+          <p class="ui-eyebrow">Market snapshot</p>
+          <h1 class="ui-page-title" id="model-title">{{ make_label }} {{ model_label }}</h1>
+          <p class="subtitle" id="model-subtitle">Loading market stats…</p>
+        </div>
+        <div class="hero-actions">
+          <a id="search-link" class="ui-btn ui-btn--secondary" href="/">Search listings</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="ui-grid ui-grid--stats stat-cards" id="stat-cards"></section>
+
+    <div class="market-charts ui-grid ui-grid--2">
+      <article class="ui-panel chart-panel">
+        <h2 class="ui-panel__title">Inventory volume by model year</h2>
+        <p class="hint">Indexed listings in our database</p>
+        <canvas id="volume-year-chart" height="120"></canvas>
+      </article>
+      <article class="ui-panel chart-panel">
+        <h2 class="ui-panel__title">New listings over time</h2>
+        <p class="hint">Monthly adds to the index</p>
+        <canvas id="volume-month-chart" height="120"></canvas>
+      </article>
+      <article class="ui-panel chart-panel">
+        <h2 class="ui-panel__title">Price by model year</h2>
+        <canvas id="year-chart" height="120"></canvas>
+      </article>
+      <article class="ui-panel chart-panel">
+        <h2 class="ui-panel__title">Observed price trend</h2>
+        <p class="hint">Monthly average from listing price history</p>
+        <canvas id="trend-chart" height="120"></canvas>
+      </article>
+    </div>
+
+    <article class="ui-panel external-volume-panel">
+      <div class="ui-panel__head panel-head">
+        <h2 class="ui-panel__title">Sales volume &amp; external data</h2>
+        <p class="hint">Public APIs + indexed market activity</p>
+      </div>
+      <div id="external-volume" class="external-volume-grid ui-grid ui-grid--2"></div>
+      <div id="external-sources" class="hint"></div>
+    </article>
+
+    <div class="ui-grid ui-grid--2 market-split">
+      <article class="ui-panel data-panel">
+        <h2 class="ui-panel__title">By source</h2>
+        <div id="by-source" class="ui-table-wrap"></div>
+      </article>
+      <article class="ui-panel data-panel">
+        <h2 class="ui-panel__title">By region</h2>
+        <div id="by-country" class="ui-table-wrap"></div>
+      </article>
+    </div>
+
+    <article class="ui-panel comps-panel">
+      <div class="ui-panel__head panel-head">
+        <h2 class="ui-panel__title">Comparable listings</h2>
+        <p class="hint">Active inventory across all ingested sources</p>
+      </div>
+      <div id="comps-table" class="ui-table-wrap"></div>
+    </article>
+  </main>
+{% endblock %}
+{% block scripts %}
+  <script>
+    window.MARKET_MODEL = {
+      make: {{ make_label | tojson }},
+      model: {{ model_label | tojson }},
+      makeSlug: {{ make_slug | tojson }},
+      modelSlug: {{ model_slug | tojson }}
+    };
+  </script>
+  <script src="/static/market.js"></script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "partials/base.html" %}
+{% block styles %}
+  <link rel="stylesheet" href="/static/market.css" />
+{% endblock %}
+{% block body %}
+  <main class="ui-main market-page">
+    <section class="ui-hero market-hero">
+      <h1 class="ui-page-title">Market data</h1>
+      <p class="subtitle">Browse make/model price trends, comps, and source breakdown — like a classic.com data view.</p>
+    </section>
+
+    <section class="ui-toolbar market-toolbar">
+      <input class="ui-input ui-search-input" type="search" id="market-filter" placeholder="Filter makes and models…" autocomplete="off" />
+      <p id="market-count" class="ui-status stats"></p>
+    </section>
+
+    <section id="market-grid" class="ui-grid ui-grid--3 market-grid" aria-live="polite"></section>
+    <p id="market-empty" class="ui-empty hint hidden">No indexed models yet — run ingest to populate market data.</p>
+  </main>
+{% endblock %}
+{% block scripts %}
+  <script src="/static/market.js"></script>
+  <script>window.MARKET_INDEX = true;</script>
+{% endblock %}

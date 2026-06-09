@@ -1,0 +1,96 @@
+/* Market data pages — layout overrides (components in rake.css) */
+
+.market-page {
+  padding-top: 0;
+}
+
+.market-card {
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.market-card:hover {
+  border-color: var(--rake-accent);
+  transform: translateY(-1px);
+}
+
+.market-card.hidden {
+  display: none;
+}
+
+.market-card-link {
+  display: block;
+  padding: var(--rake-space-4);
+  color: inherit;
+  text-decoration: none;
+}
+
+.market-card h2 {
+  margin: 0 0 var(--rake-space-2);
+  font-size: 1.05rem;
+}
+
+.market-card-stats,
+.market-card-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rake-space-2) var(--rake-space-4);
+  color: var(--rake-muted);
+  font-size: 0.88rem;
+}
+
+.market-charts {
+  margin-bottom: var(--rake-space-5);
+}
+
+.external-volume-panel {
+  margin-bottom: var(--rake-space-5);
+}
+
+.external-card {
+  padding: var(--rake-space-3);
+  border: 1px solid var(--rake-border);
+  border-radius: var(--rake-radius);
+  background: var(--rake-bg-elevated);
+}
+
+.external-card h3 {
+  margin: 0 0 var(--rake-space-2);
+  font-size: 0.9rem;
+  color: var(--rake-muted);
+  font-weight: 600;
+}
+
+.external-card .stat-value,
+.external-card .ui-stat__value {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.us-trend-wrap {
+  margin-top: var(--rake-space-4);
+  padding: var(--rake-space-3);
+  border: 1px solid var(--rake-border);
+  border-radius: var(--rake-radius);
+  background: var(--rake-bg-elevated);
+}
+
+.us-trend-wrap h2 {
+  margin: 0 0 var(--rake-space-2);
+  font-size: 0.95rem;
+}
+
+.market-split,
+.comps-panel {
+  margin-bottom: var(--rake-space-5);
+}
+
+.comps-panel .ui-panel__title {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .ui-stat__value,
+  .stat-value {
+    font-size: 1.15rem;
+  }
+}
