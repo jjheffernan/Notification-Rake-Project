@@ -1,0 +1,80 @@
+{% extends "partials/base.html" %}
+{% block styles %}
+  <link rel="stylesheet" href="/static/dashboard.css" />
+{% endblock %}
+{% block body %}
+  <main class="ui-main ui-page--narrow watchlist-page">
+    <section class="ui-hero watchlist-hero">
+      <h1 class="ui-page-title">Watchlist</h1>
+      <p class="subtitle">
+        Schedule regular searches for specific vehicles. Each run refreshes ingest routes,
+        re-queries the index, and alerts on new matches.
+      </p>
+      <p id="watchlist-status" class="ui-status" aria-live="polite"></p>
+      <div class="action-row">
+        <button type="button" id="run-due-btn" class="ui-btn ui-btn--primary">Run due searches</button>
+        <button type="button" id="run-all-btn" class="ui-btn ui-btn--secondary">Run all now</button>
+      </div>
+    </section>
+
+    <section class="ui-grid ui-grid--2 watchlist-layout">
+      <article class="ui-panel accounts-card">
+        <h2 class="ui-panel__title">Scheduled searches</h2>
+        <div id="watchlist-items" class="ui-list watchlist-items"></div>
+      </article>
+
+      <article class="ui-panel accounts-card">
+        <h2 class="ui-panel__title">Add vehicle search</h2>
+        <form id="watchlist-form" class="ui-form account-form">
+          <div class="ui-field">
+            <label for="watch-name">Name</label>
+            <input class="ui-input" name="name" id="watch-name" placeholder="e.g. Nissan Stagea Autech" required />
+          </div>
+          <div class="ui-field-row">
+            <div class="ui-field">
+              <label for="watch-make">Make</label>
+              <input class="ui-input" name="make" id="watch-make" placeholder="Nissan" />
+            </div>
+            <div class="ui-field">
+              <label for="watch-model">Model</label>
+              <input class="ui-input" name="model" id="watch-model" placeholder="Stagea" />
+            </div>
+          </div>
+          <div class="ui-field">
+            <label for="watch-q">Keywords</label>
+            <input class="ui-input" name="q" id="watch-q" placeholder="Optional extra terms" />
+          </div>
+          <div class="ui-field">
+            <label for="watch-route">Ingest route (search scope)</label>
+            <select class="ui-select" name="route" id="watch-route">
+              <option value="">All routes</option>
+            </select>
+          </div>
+          <div class="ui-field">
+            <label for="watch-interval">Run every (hours)</label>
+            <input class="ui-input" name="interval_hours" id="watch-interval" type="number" min="1" max="168" value="6" />
+          </div>
+          <div class="ui-field">
+            <label for="watch-ingest-routes">Refresh before search</label>
+            <select class="ui-select" name="ingest_routes" id="watch-ingest-routes" multiple size="5"></select>
+            <span class="hint">Hold ⌘/Ctrl to select multiple ingest pipelines</span>
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" name="alert_enabled" id="watch-alert" checked />
+            Gotify alert on new matches
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="enabled" id="watch-enabled" checked />
+            Enabled
+          </label>
+          <div class="action-row">
+            <button type="submit" class="ui-btn ui-btn--primary">Save scheduled search</button>
+          </div>
+        </form>
+      </article>
+    </section>
+  </main>
+{% endblock %}
+{% block scripts %}
+  <script src="/static/watchlist.js"></script>
+{% endblock %}
