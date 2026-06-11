@@ -1,0 +1,25 @@
+{
+  "captured_at": null,
+  "notes": "Fill during phase 0 notebook proxy recon. See docs/yahoo-setup.md section 6.",
+  "proxies": {
+    "buyee": {
+      "search": [],
+      "detail": [],
+      "shipping": []
+    },
+    "neokyo": {
+      "search": [],
+      "detail": [],
+      "shipping": []
+    },
+    "fromjapan": {
+      "search": [],
+      "detail": [],
+      "shipping": []
+    }
+  },
+  "yahoo_official": {
+    "search": "GET {YAHOO_AUCTION_API_BASE}/search?appid=...&category=26360&output=json",
+    "auction_item": "GET {YAHOO_AUCTION_API_BASE}/auctionItem?appid=...&auctionID=..."
+  }
+}

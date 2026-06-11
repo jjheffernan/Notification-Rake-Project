@@ -1,0 +1,39 @@
+{
+  "source": "copart",
+  "base_url": "https://www.copart.com",
+  "access_tiers": {
+    "fixture": {
+      "path": "src/notification_rake/fixtures/copart_sample.json",
+      "use_when": "COPART_API_KEY unset or COPART_API_MODE=fixture"
+    },
+    "provider_api": {
+      "path": "COPART_API_BASE + /lots/search",
+      "use_when": "COPART_API_MODE=provider"
+    },
+    "web": {
+      "search": "https://www.copart.com/public/data/lotSearch/search",
+      "detail": "https://www.copart.com/public/data/lotdetails/solr/{lot_number}",
+      "use_when": "COPART_API_MODE=web"
+    }
+  },
+  "image_cdn_hosts": [
+    "cs.copart.com",
+    "img.copart.com"
+  ],
+  "fields": [
+    "lot_number",
+    "title",
+    "make",
+    "model",
+    "year",
+    "current_bid",
+    "auction_status",
+    "primary_damage",
+    "title_type",
+    "run_and_drive",
+    "has_keys",
+    "gallery_urls",
+    "latitude",
+    "longitude"
+  ]
+}
