@@ -1,9 +1,11 @@
-"""Container script: upsert listings to PostGIS."""
+"""Upsert Craigslist listings to PostGIS."""
 
 from __future__ import annotations
 
 from notification_rake.config import settings
 from notification_rake.workflow import ingest, normalize, sync
+
+ALIASES = ("upsert",)
 
 
 def run() -> int:

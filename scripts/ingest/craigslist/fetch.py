@@ -1,9 +1,11 @@
-"""Container script: fetch Craigslist listings."""
+"""Fetch Craigslist RSS listings (preview / debug)."""
 
 from __future__ import annotations
 
 from notification_rake.config import settings
 from notification_rake.workflow import ingest
+
+ALIASES = ("ingest",)
 
 
 def run() -> int:

@@ -1,8 +1,10 @@
-"""Container script: check db, hasura, gotify reachability."""
+"""Check db, hasura, gotify reachability."""
 
 from __future__ import annotations
 
 from notification_rake.admin import check_services
+
+ALIASES = ("health",)
 
 
 def run() -> int:

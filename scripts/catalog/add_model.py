@@ -1,4 +1,4 @@
-"""Container script: add a make/model to the vehicle catalog."""
+"""Add a make/model to the vehicle catalog."""
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ import sys
 
 from notification_rake.config import settings
 from notification_rake.storage import add_vehicle_model
+
+ALIASES = ("add_model",)
 
 
 def run() -> int:

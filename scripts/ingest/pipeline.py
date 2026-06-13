@@ -1,8 +1,10 @@
-"""Container script: full multi-source ingest."""
+"""Full multi-source ingest pipeline."""
 
 from __future__ import annotations
 
 from notification_rake.workflow.multi_source import run_all_sources
+
+ALIASES = ("pipeline",)
 
 
 def run() -> int:

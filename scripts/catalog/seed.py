@@ -1,9 +1,11 @@
-"""Container script: seed canonical vehicle makes/models."""
+"""Seed canonical vehicle makes/models."""
 
 from __future__ import annotations
 
 from notification_rake.config import settings
 from notification_rake.storage import seed_catalog
+
+ALIASES = ("seed",)
 
 
 def run() -> int:
