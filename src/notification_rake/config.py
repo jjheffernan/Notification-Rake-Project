@@ -9,11 +9,23 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
+
+def _find_repo_root() -> Path:
+    """Locate project root (works for src/ layout and installed copies in a checkout)."""
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "pyproject.toml").is_file() and (parent / "scripts").is_dir():
+            return parent
+    return _REPO_ROOT
+
+
+_PROJECT_ROOT = _find_repo_root()
+
 # Defaults mirrored in pyproject.toml [tool.notification-rake] and .env.example
 DEFAULT_POSTGRES_USER = "rake"
 DEFAULT_POSTGRES_PASSWORD = "change-me"
 DEFAULT_POSTGRES_DB = "rake"
-DEFAULT_SCRIPTS_DIR = _REPO_ROOT / "scripts"
+DEFAULT_SCRIPTS_DIR = _PROJECT_ROOT / "scripts"
 DEFAULT_CRAIGSLIST_RSS = (
     "https://sfbay.craigslist.org/search/cta?format=rss&query=toyota+camry"
 )

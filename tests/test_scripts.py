@@ -10,6 +10,14 @@ def test_script_names():
     assert "pipeline" in names
     assert "ingest" in names
     assert "hasura_track" in names
+    assert "ingest.copart.ingest" in names
+    assert "ingest.routes.us_retail" in names
+
+
+def test_run_script_by_canonical_name():
+    sample = [VehicleListing(source="c", source_listing_id="1", title="test")]
+    with patch("notification_rake.workflow.ingest", return_value=sample):
+        assert run_script("ingest.craigslist.fetch") == 0
 
 
 def test_main_help():
