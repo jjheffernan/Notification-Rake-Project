@@ -1,0 +1,22 @@
+title = "notification-rake gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Dev placeholders, tests, and documented env examples"
+paths = [
+  '''\.env\.example$''',
+  '''^SECURITY\.md$''',
+  '''^docs/''',
+]
+regexes = [
+  '''change-me''',
+  '''change-me-dev-key''',
+  '''change-me-dashboard-secret''',
+  '''postgresql://u:p@''',
+  '''admin_secret="secret"''',
+  '''password": "secret"''',
+  '''test-token''',
+  '''test-key''',
+]
