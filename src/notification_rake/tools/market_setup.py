@@ -200,17 +200,13 @@ def generate_ingest_script(spec: MarketSpec) -> str:
 
 from __future__ import annotations
 
-from notification_rake.workflow.routes import run_route
+from ingest._common import run_route_script
+
+ALIASES = ("ingest_{slug}",)
 
 
 def run() -> int:
-    result = run_route("{slug}")
-    r = result.result
-    print(
-        f"ingest_{slug}: fetched={{r.fetched}} upserted={{r.upserted}} "
-        f"sources={{','.join(result.sources)}}"
-    )
-    return 0 if r.upserted > 0 else 1
+    return run_route_script("{slug}")
 '''
 
 
@@ -239,7 +235,7 @@ def plan_market(spec: MarketSpec) -> MarketPlan:
         "Wire fetch_route() in workflow/routes.py",
         "Add SUPPORTED_PROVIDERS + connector in ingestion/connectors.py",
         "Add ACCOUNT_FIELDS entry in web/blueprints/public.py (if connected)",
-        f"Create scripts/ingest_{normalize_slug(spec.route_slug)}.py",
+        f"Create scripts/ingest/routes/{normalize_slug(spec.route_slug)}.py",
         f"Implement ingestion/{normalize_slug(spec.route_slug)}/ module",
         "Add admin action in admin/console.py",
         "Add tests in tests/test_ingest_routes.py",
@@ -335,8 +331,8 @@ def audit_market(spec: MarketSpec) -> list[CheckResult]:
         )
     )
 
-    script_path = _REPO_ROOT / "scripts" / f"ingest_{slug}.py"
-    results.append(CheckResult(f"scripts/ingest_{slug}.py", script_path.is_file()))
+    script_path = _REPO_ROOT / "scripts" / "ingest" / "routes" / f"{slug}.py"
+    results.append(CheckResult(f"scripts/ingest/routes/{slug}.py", script_path.is_file()))
 
     ingest_mod = _REPO_ROOT / "src" / "notification_rake" / "ingestion" / slug
     results.append(
@@ -356,8 +352,10 @@ def write_artifacts(plan: MarketPlan, output_dir: Path | None = None) -> Path:
     out = output_dir or (_REPO_ROOT / "notebooks" / "out" / f"market_{slug}")
     out.mkdir(parents=True, exist_ok=True)
 
+    routes_dir = out / "routes"
+    routes_dir.mkdir(exist_ok=True)
     (out / plan.migration_filename).write_text(plan.migration_sql, encoding="utf-8")
-    (out / f"ingest_{slug}.py").write_text(plan.ingest_script, encoding="utf-8")
+    (routes_dir / f"{slug}.py").write_text(plan.ingest_script, encoding="utf-8")
     (out / f"ingestion_{slug}_stub.py").write_text(plan.ingestion_stub, encoding="utf-8")
 
     readme = [

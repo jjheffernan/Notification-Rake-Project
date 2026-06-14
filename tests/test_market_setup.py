@@ -47,7 +47,7 @@ def test_write_artifacts(tmp_path):
     plan = plan_market(spec)
     out = write_artifacts(plan, tmp_path)
     assert (out / plan.migration_filename).is_file()
-    assert (out / "ingest_test_market.py").is_file()
+    assert (out / "routes" / "test_market.py").is_file()
     assert (out / "README.md").is_file()
 
 
