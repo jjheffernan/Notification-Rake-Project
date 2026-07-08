@@ -22,6 +22,7 @@ For public hosting, keep `ADMIN_NAV_VISIBLE=false`. Operators reach `/admin/logi
 | `DASHBOARD_SECRET_KEY` | Strong random; signs admin session |
 | `ADMIN_PASSWORD` | Strong random; not `change-me` |
 | `MEILISEARCH_API_KEY` | Required when Meilisearch is deployed |
+| `CREDENTIAL_ENCRYPTION_KEY` | Fernet key for marketplace credentials; required in production |
 | `JUPYTER_TOKEN` | Long random; keep Jupyter off public Traefik |
 
 Set `ADMIN_NAV_VISIBLE=false` on any internet-facing deployment.
@@ -29,15 +30,17 @@ Set `ADMIN_NAV_VISIBLE=false` on any internet-facing deployment.
 ## Network
 
 - Local compose binds `127.0.0.1` only.
-- Coolify: Traefik for public dashboard (when added) — no public Postgres, Jupyter, or Adminer.
+- Coolify: Traefik for public `dashboard`, `hasura`, `gotify` — no public Postgres, Jupyter, Adminer, or Meilisearch.
 
 ## App
 
 - `.env` gitignored.
 - Gotify token in query param (API convention) — keep `LOG_LEVEL=WARNING` in prod.
-- Marketplace credentials are stored in `metadata.connected_account` (JSON). **Encrypt at rest before production** — see [`PLAN.md`](PLAN.md) Phase 2.
+- Marketplace credentials in `metadata.connected_account.config` are **encrypted at rest** (Fernet). Set `CREDENTIAL_ENCRYPTION_KEY` in production; API responses mask secrets (`storage/credential_crypto.py`).
 - `profile_id` acts as a bearer token; treat UUID like a password — do not share links that embed it.
-- `POST /api/scheduled-searches/run` should require `profile_id` (planned — [`PLAN.md`](PLAN.md) Phase 0).
+- `POST /api/scheduled-searches/run` requires `profile_id` — no global batch.
+- Public `/api/*` and `/admin/login` are rate-limited (`web/rate_limit.py`).
+- Admin login uses CSRF + `Secure`/`HttpOnly`/`SameSite` session cookies when `RAKE_ENV=production`.
 
 ## Reference
 

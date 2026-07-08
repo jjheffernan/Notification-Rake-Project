@@ -74,9 +74,9 @@ These are referenced directly in `deploy/coolify/docker-compose.yml` (`${VAR:?se
 | `GOTIFY_ADMIN_PASS` | — | `gotify` | Required; Gotify admin password |
 | `JUPYTER_TOKEN` | — | `jupyter` | Required when `dev-tools` profile is enabled |
 
-#### App / dashboard / search (Phase 1.1+)
+#### App / dashboard / search
 
-Not yet in `deploy/coolify/docker-compose.yml` today; set these in Coolify now so they are ready when `dashboard`, `app`, and `meilisearch` are added:
+`deploy/coolify/docker-compose.yml` includes `dashboard`, `app`, and `meilisearch`. Set these in Coolify:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
@@ -90,6 +90,7 @@ Not yet in `deploy/coolify/docker-compose.yml` today; set these in Coolify now s
 | `DASHBOARD_PORT` | `8000` | Container listen port |
 | `ADMIN_USER` | `admin` | Operator username |
 | `LOG_LEVEL` | `INFO` | Use `WARNING` in prod to reduce Gotify token noise in logs |
+| `CREDENTIAL_ENCRYPTION_KEY` | — | Fernet key for marketplace credentials; required in production |
 
 Ingestion, geocoding, FX, and marketplace toggles (`CRAIGSLIST_SEARCH_RSS`, `YAHOO_*`, `COPART_*`, `EU_*`, `CARSANDBIDS_*`, `NOMINATIM_URL`, `GEOCODE_USER_AGENT`, `FX_*`, `IMAGE_PROXY_ENABLED`, optional `FRED_API_KEY`, `CIS_AUTOMOTIVE_*`) follow `.env.example` — required only when those pipelines are enabled.
 
@@ -105,7 +106,7 @@ Ingestion, geocoding, FX, and marketplace toggles (`CRAIGSLIST_SEARCH_RSS`, `YAH
 | `meilisearch` | Internal | — | Search index — no Traefik labels |
 | `jupyter` | Internal | — | `dev-tools` profile only; token auth, no public route |
 
-> **Current compose:** `deploy/coolify/docker-compose.yml` ships `db`, `hasura`, `gotify`, and optional `jupyter` only. `dashboard`, `app`, and `meilisearch` are Phase 1.1 — exposure table above is the target once parity lands.
+> **Compose:** `deploy/coolify/docker-compose.yml` ships `db`, `hasura`, `gotify`, `meilisearch`, `dashboard`, and `app`. Optional `jupyter` via `dev-tools` profile.
 
 ## Hasura bootstrap
 
@@ -121,8 +122,12 @@ make run CMD=hasura_track
 
 - Lint (ruff)
 - pytest
+- Gitleaks secrets scan
+- pip-audit (supply-chain job)
 - Docker build on PR/push
 - Webhook deploy on `main` (if configured)
+
+Post-deploy smoke: `scripts/ops/smoke_deploy.sh` (manual; E2E in CI is Phase 4).
 
 ## Scale path (future)
 

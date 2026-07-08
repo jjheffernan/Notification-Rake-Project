@@ -126,3 +126,17 @@ Reference rubric for auditing Notification Rake before public deployment. Re-sco
 | Testing & quality | 8 | pytest + gitleaks + ruff |
 | Documentation | 6 | Wiki strong; SECURITY.md stale |
 | **Weighted total** | **62** | **Grade D** |
+
+## Post Phase 0–2 audit (2026-07-08)
+
+| Category | Score | Notes |
+|----------|-------|-------|
+| Deployment & infrastructure | 7 | Coolify parity; smoke script; no E2E CI |
+| Auth & authorization | 8 | Encryption, rate limits, profile scoping; UUID bearer |
+| Observability | 6 | `LOG_LEVEL` + deep `/health` |
+| Data & persistence | 6 | Encrypted credentials; no backups |
+| API & product | 8 | Rate limits; cache headers |
+| Ingestion & workflow | 8 | Profile-scoped batch; in-request worker |
+| Testing & quality | 9 | + pip-audit, `test_ux_flows.py` |
+| Documentation | 7 | Audit doc; incident runbook missing |
+| **Weighted total** | **74** | **Grade C** |

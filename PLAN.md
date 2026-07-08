@@ -6,7 +6,7 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 - [`docs/reference/twelve-factor-compliance.md`](docs/reference/twelve-factor-compliance.md)
 - [`docs/reference/security-practices.md`](docs/reference/security-practices.md)
 
-**Last audited:** 2026-07-08 (post Phase 0 merge)
+**Last audited:** 2026-07-08 (post Phase 0–2 merge + post-phase-2 audit)
 
 ---
 
@@ -14,16 +14,16 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 
 | Metric | Score | Grade / status |
 |--------|-------|----------------|
-| **Production readiness** | ~72 / 100 | C− — Phase 1 PRs ready |
-| **12-factor compliance** | ~75% | Compose parity + LOG_LEVEL; worker still gap |
-| **Security posture** | ~68 / 100 | Phase 2 PRs ready — credentials encrypted |
-| **Composite (avg)** | **~72 / 100** | Post-audit next |
+| **Production readiness** | ~74 / 100 | C — staging-ready; launch needs Phase 3–4 |
+| **12-factor compliance** | ~76% | Worker queue still gap (VIII) |
+| **Security posture** | ~73 / 100 | Phase 2 exit met (≥65) |
+| **Composite (avg)** | **~74 / 100** | Post-audit complete |
 
 ### Development cycle position
 
 ```text
 [ Research ] → [ MVP / local ] → [ Hardening ] → [ Staging ] → [ Public launch ]
-                              ▲ YOU ARE HERE (Phase 1 PRs → merge → Phase 2)
+                                    ▲ YOU ARE HERE (Phase 3 worker next)
 ```
 
 | Stage | Status |
@@ -32,10 +32,11 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 | Buyer identity (non-admin sign-in) | ✅ Shipped — `/signin`, nav gated |
 | Operator console | ✅ Exists — `/admin`, hidden from public nav |
 | Phase 0 public-surface safety | ✅ Merged — PRs [#1](https://github.com/jjheffernan/Notification-Rake-Project/pull/1)–[#4](https://github.com/jjheffernan/Notification-Rake-Project/pull/4) |
-| Production deploy stack | ❌ Coolify compose incomplete — **Phase 1** |
-| Security hardening (credentials, rate limits) | ⬜ Phase 2 |
-| Staging / soak | ⬜ Phase 1.6 |
-| Public launch | ⬜ Blocked on Phases 1–2 |
+| Production deploy stack | ✅ Phase 1 merged — Coolify compose parity |
+| Security hardening (credentials, rate limits) | ✅ Phase 2 merged — PRs [#10](https://github.com/jjheffernan/Notification-Rake-Project/pull/10)–[#13](https://github.com/jjheffernan/Notification-Rake-Project/pull/13) |
+| Post–Phase 2 audit | ✅ [`docs/plans/post-phase-2-audit.md`](docs/plans/post-phase-2-audit.md) |
+| Staging / soak | ⬜ Manual smoke only |
+| Public launch | ⬜ Blocked on Phase 3–4 (readiness ≥80) |
 
 ---
 
@@ -45,15 +46,15 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 
 | Category | Wt | Score | Wtd | Evidence |
 |----------|-----|-------|-----|----------|
-| Deployment & infrastructure | 15% | 4 | 0.60 | `deploy/coolify/docker-compose.yml` missing dashboard, app, meilisearch |
-| Auth & authorization | 15% | 7 | 1.05 | profile_id on batch ✅; authz tests ✅ |
-| Observability | 10% | 6 | 0.60 | `admin/console.py` probes; `LOG_LEVEL` still unwired |
-| Data & persistence | 15% | 7 | 1.05 | `db/init/` solid; no automated backups |
-| API & product | 10% | 7 | 0.70 | Cache headers ✅; no rate limits |
-| Ingestion & workflow | 15% | 8 | 1.20 | Batch scoped to profile ✅ |
-| Testing & quality | 10% | 9 | 0.90 | +`test_accounts.py`, config + authz tests |
-| Documentation | 10% | 7 | 0.70 | Wiki auth docs ✅ |
-| **Total** | | | **~65** | |
+| Deployment & infrastructure | 15% | 7 | 1.05 | Coolify compose parity ✅; smoke script; no E2E CI |
+| Auth & authorization | 15% | 8 | 1.20 | profile_id batch ✅; encryption ✅; rate limits ✅; UUID bearer |
+| Observability | 10% | 6 | 0.60 | `LOG_LEVEL` wired; deep `/health`; no JSON logs |
+| Data & persistence | 15% | 6 | 0.90 | `db/init/` solid; encrypted credentials; no backups |
+| API & product | 10% | 8 | 0.80 | Rate limits ✅; cache headers; responsive partial |
+| Ingestion & workflow | 15% | 8 | 1.20 | Multi-source; profile-scoped batch; in-request worker |
+| Testing & quality | 10% | 9 | 0.90 | pytest + ruff + gitleaks + pip-audit + `test_ux_flows.py` |
+| Documentation | 10% | 7 | 0.70 | Wiki + audit doc; incident runbook missing |
+| **Total** | | | **~74** | Grade C |
 
 ### 12-factor snapshot
 
@@ -61,31 +62,31 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 |--------|--------|----------|
 | I Codebase | Compliant | |
 | II Dependencies | Compliant | |
-| III Config | Partial | `RAKE_ENV` prod validation ✅; `LOG_LEVEL` still unwired |
-| IV Backing services | Partial | Coolify missing services |
+| III Config | Partial | `RAKE_ENV` + `LOG_LEVEL` wired ✅ |
+| IV Backing services | Partial | No Redis/worker yet |
 | V Build/release/run | Partial | Release tagging |
-| VI Processes | Partial | Stateless OK; batch in-request |
+| VI Processes | Partial | Batch in-request |
 | VII Port binding | Compliant | |
-| VIII Concurrency | Gap | No worker queue |
-| IX Disposability | Partial | Shallow health |
-| X Dev/prod parity | Gap | **Yes — P0** |
-| XI Logs | Partial | LOG_LEVEL wiring |
+| VIII Concurrency | Gap | **Yes — Phase 3** |
+| IX Disposability | Partial | Deep `/health` ✅ |
+| X Dev/prod parity | Partial | Coolify parity ✅ |
+| XI Logs | Partial | `LOG_LEVEL` wired |
 | XII Admin processes | Partial | One-off scripts exist |
 
 ### Security by domain
 
 | Domain | Score | Priority fix |
 |--------|-------|--------------|
-| Secrets management | 7 | `RAKE_ENV=production` rejects placeholders ✅ |
-| Network exposure | 7 | Full Coolify stack — Phase 1 |
-| Authentication | 5 | Signed buyer sessions (Phase 4 optional) |
-| Authorization | 7 | profile_id on batch ✅; authz tests ✅ |
-| Session/cookies | 5 | Secure + CSRF on admin — Phase 2 |
-| Data protection | 3 | Encrypt `connected_account.config` — Phase 2 |
-| Supply chain | 7 | Dependabot — Phase 2.5 |
-| Logging | 6 | Wire LOG_LEVEL — Phase 1.5 |
+| Secrets management | 8 | Rotation runbook |
+| Network exposure | 8 | Coolify TLS ops |
+| Authentication | 6 | Signed buyer sessions (Phase 4) |
+| Authorization | 8 | — |
+| Session/cookies | 8 | CSRF + secure cookies ✅ |
+| Data protection | 8 | Encrypt credentials ✅ |
+| Supply chain | 8 | Dependabot + pip-audit ✅ |
+| Logging | 7 | Auth failure audit |
 | Incident response | 4 | Runbook — Phase 4 |
-| Secure development | 8 | `test_accounts.py` + scheduled authz tests ✅ |
+| Secure development | 8 | `test_ux_flows.py` + authz tests ✅ |
 
 ---
 
@@ -125,7 +126,7 @@ Each phase is a **deployable increment**. Prefer one **single-purpose sub-agent*
 
 ---
 
-### Phase 1 — Deploy parity (P0) ✅ PRs open
+### Phase 1 — Deploy parity (P0) ✅ Merged
 
 **Goal:** Coolify stack matches local core services.
 
@@ -138,11 +139,11 @@ Each phase is a **deployable increment**. Prefer one **single-purpose sub-agent*
 | 1.5 | Wire `LOG_LEVEL` to Python logging | 2 | `config-hardening` | ✅ [#7](https://github.com/jjheffernan/Notification-Rake-Project/pull/7) |
 | 1.6 | Staging smoke script (`scripts/ops/smoke_deploy.sh`) | 3 | `ops-smoke` | ✅ [#5](https://github.com/jjheffernan/Notification-Rake-Project/pull/5) |
 
-**Phase exit:** Pending merge — deployment parity in compose; deep health + smoke script ready.
+**Phase exit:** ✅ Met — deployment parity in compose; deep health + smoke script.
 
 ---
 
-### Phase 2 — Credential & admin hardening (P1) ✅ PRs open
+### Phase 2 — Credential & admin hardening (P1) ✅ Merged
 
 **Goal:** Protect marketplace credentials and operator surface.
 
@@ -154,7 +155,19 @@ Each phase is a **deployable increment**. Prefer one **single-purpose sub-agent*
 | 2.4 | Rate limit `/api/*` and `/admin/login` | 5 | `api-rate-limit` | ✅ [#11](https://github.com/jjheffernan/Notification-Rake-Project/pull/11) |
 | 2.5 | Dependabot / pip-audit in CI | 2 | `ci-supply-chain` | ✅ [#10](https://github.com/jjheffernan/Notification-Rake-Project/pull/10) |
 
-**Phase exit:** Pending merge — target security ≥65, data protection ≥7.
+**Phase exit:** ✅ Met — security 73 (≥65); data protection 8 (≥7).
+
+---
+
+### Post–Phase 2 audit ✅ Complete
+
+| Track | Goal | Sub-agent | Done |
+|-------|------|-----------|------|
+| Gap audit | Site-wide gaps vs PRD + rubrics | `audit-readiness` | ✅ |
+| UX / flow tests | Sign-in → search → watchlist → accounts | `test-ux-flows` | ✅ `tests/test_ux_flows.py` |
+| Notifications | Gotify today; email + in-app matrix | `research-notifications` | ✅ |
+
+Deliverable: [`docs/plans/post-phase-2-audit.md`](docs/plans/post-phase-2-audit.md)
 
 ---
 
@@ -205,7 +218,7 @@ Single-purpose agents — assign one task ID per invocation.
 | `api-rate-limit` | Flask-Limiter or middleware | public + admin blueprints |
 | `worker-infra` | Redis, worker Dockerfile target | `docker/` |
 | `worker-scheduled` | `workflow/scheduled_batch.py` | worker + API |
-| `test-authz` | `tests/test_web.py`, `tests/test_accounts.py` | API routes |
+| `test-authz` | `tests/test_web.py`, `tests/test_accounts.py`, `tests/test_ux_flows.py` | API routes |
 | `docs-security` | `SECURITY.md`, wiki | reference docs |
 | `docs-deploy` | `docs/deploy.md`, wiki Deployment | compose files |
 | `ops-smoke` | `scripts/ops/` | curl/httpie checks |
@@ -221,6 +234,7 @@ Single-purpose agents — assign one task ID per invocation.
 | 2026-07-08 | ~65 | ~70% | ~56 | ~64 | Phase 0 merged (#1–#4); foundation `1fa176e` |
 | 2026-07-08 | ~72 | ~75% | ~56 | ~68 | Phase 1 merged (#5–#9) |
 | 2026-07-08 | ~74 | ~75% | ~68 | ~72 | Phase 2 swarms done; PRs #10–#13 |
+| 2026-07-08 | ~74 | ~76% | ~73 | ~74 | Phase 2 merged; post-audit + rubric re-score |
 
 ---
 
@@ -235,18 +249,6 @@ Single-purpose agents — assign one task ID per invocation.
 
 ## Next actions
 
-**Merge Phase 2:** [#10](https://github.com/jjheffernan/Notification-Rake-Project/pull/10)–[#13](https://github.com/jjheffernan/Notification-Rake-Project/pull/13) when CI green.
+**Phase 3 kickoff:** Spawn `worker-infra` (3.1) first, then `worker-scheduled` tasks.
 
-### Post–Phase 2 audit (after merge)
-
-| Track | Goal | Sub-agent |
-|-------|------|-----------|
-| Gap audit | Site-wide gaps vs PRD + rubrics; undefined flows | `audit-readiness` |
-| UX / flow tests | Sign-in → search vehicle → watchlist → accounts | `test-ux-flows` |
-| Notifications | Gotify today; email + in-app matrix | `research-notifications` |
-
-Deliverables: `docs/plans/post-phase-2-audit.md`, expanded tests, notification recommendations.
-
-### Phase 3 kickoff (after audit)
-
-Spawn `worker-infra` (3.1) first, then `worker-scheduled` tasks.
+See [`docs/plans/post-phase-2-audit.md`](docs/plans/post-phase-2-audit.md) for gap priorities (worker, backups, per-profile notifications).

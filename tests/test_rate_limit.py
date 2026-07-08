@@ -6,6 +6,15 @@ from notification_rake.web import create_app
 from notification_rake.web.rate_limit import reset_rate_limits
 
 
+def _csrf_from_login_page(client):
+    import re
+
+    resp = client.get("/admin/login")
+    match = re.search(rb'name="csrf_token" value="([^"]+)"', resp.data)
+    assert match is not None
+    return match.group(1).decode()
+
+
 @pytest.fixture(autouse=True)
 def _clear_rate_limits():
     reset_rate_limits()
@@ -67,16 +76,18 @@ def test_admin_login_rate_limit_returns_429(client, monkeypatch):
     monkeypatch.setattr("notification_rake.web.auth.settings.admin_user", "admin")
     monkeypatch.setattr("notification_rake.web.auth.settings.admin_password", "secret")
     env = {"REMOTE_ADDR": "198.51.100.7"}
+    csrf = _csrf_from_login_page(client)
     for _ in range(2):
         resp = client.post(
             "/admin/login",
-            data={"username": "admin", "password": "wrong"},
+            data={"csrf_token": csrf, "username": "admin", "password": "wrong"},
             environ_base=env,
         )
         assert resp.status_code == 401
+        csrf = _csrf_from_login_page(client)
     resp = client.post(
         "/admin/login",
-        data={"username": "admin", "password": "wrong"},
+        data={"csrf_token": csrf, "username": "admin", "password": "wrong"},
         environ_base=env,
     )
     assert resp.status_code == 429

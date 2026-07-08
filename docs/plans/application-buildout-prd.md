@@ -1,6 +1,6 @@
 # PRD: Application build-out to public deployment
 
-**Status:** Phase 0 complete (merged #1–#4). Phase 1 next.
+**Status:** Phase 0–2 complete (merged #1–#13). Post–Phase 2 audit: [`post-phase-2-audit.md`](post-phase-2-audit.md). Phase 3 next.
 
 ---
 
@@ -44,13 +44,13 @@ Ship a **publicly hostable** vehicle listing platform where:
 
 ## Success metrics
 
-| Metric | Current | Phase 0 exit | Launch target |
+| Metric | Current | Phase 2 exit | Launch target |
 |--------|---------|--------------|---------------|
-| Readiness score | 62 | 68 | ≥80 |
-| Security score | 47 | 58 | ≥65 |
-| 12-factor compliance | 68% | 75% | ≥85% |
-| Coolify compose parity | Partial | N/A | Full core stack |
-| Global batch without profile | Yes | No | No |
+| Readiness score | ~74 | 72 | ≥80 |
+| Security score | ~73 | 65 ✅ | ≥65 ✅ |
+| 12-factor compliance | ~76% | 75% | ≥85% |
+| Coolify compose parity | Full | Full ✅ | Full core stack |
+| Global batch without profile | No | No ✅ | No |
 
 ---
 

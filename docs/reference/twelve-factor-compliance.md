@@ -2,6 +2,8 @@
 
 Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score each factor: **Compliant**, **Partial**, or **Gap**. Target ≥90% before public production.
 
+**Last audited:** 2026-07-08 (post Phase 0–2 merge)
+
 ---
 
 ## I. Codebase
@@ -12,8 +14,6 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 |--------|----------|
 | **Compliant** | Single Git repo; `docker-compose.yml` (local) and `deploy/coolify/docker-compose.yml` (prod) from same tree; CI builds same `docker/Dockerfile` targets. |
 
-**Gaps:** Coolify compose is not a full deploy of the app surface (missing `dashboard`, `app`, `meilisearch`).
-
 ---
 
 ## II. Dependencies
@@ -22,7 +22,7 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Compliant** | `pyproject.toml` with `[project.dependencies]` and `[project.optional-dependencies] dev`; Docker multi-stage builds; pip install in CI. |
+| **Compliant** | `pyproject.toml` with `[project.dependencies]` and `[project.optional-dependencies] dev`; Docker multi-stage builds; pip install in CI; Dependabot + pip-audit job. |
 
 ---
 
@@ -32,12 +32,9 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Partial** | `config.Settings` via pydantic-settings; `.env.example` documents vars. |
+| **Partial** | `config.Settings` via pydantic-settings; `.env.example` documents vars; `RAKE_ENV=production` rejects placeholder secrets; `configure_logging()` applies `LOG_LEVEL`. |
 
-**Gaps:**
-- Default `change-me` secrets not rejected at startup in production.
-- `LOG_LEVEL` defined but not applied to Python logging.
-- Some paths hardcoded in docs vs env (`RAKE_SCRIPTS_DIR` optional).
+**Remaining:** `CREDENTIAL_ENCRYPTION_KEY` can derive from `DASHBOARD_SECRET_KEY` in dev only — document rotation path.
 
 ---
 
@@ -47,9 +44,9 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Partial** | Postgres, Hasura, Gotify, Meilisearch referenced by URL env vars; `search_engine=auto` switches Postgres vs Meilisearch. |
+| **Partial** | Postgres, Hasura, Gotify, Meilisearch referenced by URL env vars; Coolify compose includes `db`, `hasura`, `gotify`, `meilisearch`, `dashboard`, `app`. |
 
-**Gaps:** Coolify stack does not attach Meilisearch or app worker to the same network as full local stack.
+**Remaining:** No Redis/worker backing service yet.
 
 ---
 
@@ -73,7 +70,7 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 |--------|----------|
 | **Partial** | Flask/gunicorn dashboard is stateless; admin session in signed cookie. Buyer `profile_id` is client-held UUID. |
 
-**Gaps:** No horizontal scale story; scheduled batch runs in-request (no worker queue).
+**Gaps:** Scheduled batch runs in-request (no worker queue).
 
 ---
 
@@ -83,7 +80,7 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Compliant** | Dashboard binds `DASHBOARD_PORT`; local compose uses `127.0.0.1` bindings; Traefik labels on Coolify services. |
+| **Compliant** | Dashboard binds `DASHBOARD_PORT`; local compose uses `127.0.0.1` bindings; Traefik labels on Coolify `dashboard`, `hasura`, `gotify`. |
 
 ---
 
@@ -93,7 +90,7 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Gap** | Single gunicorn process in dashboard container; ingest/cron via manual scripts or API trigger; no Redis/Celery worker (noted in `docs/deploy.md` scale path). |
+| **Gap** | Single gunicorn process in dashboard container; ingest/cron via manual scripts or API trigger; no Redis/Celery worker (`PLAN.md` Phase 3). |
 
 ---
 
@@ -103,9 +100,9 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Partial** | DB healthchecks in compose; gunicorn handles SIGTERM. |
+| **Partial** | DB healthchecks in compose; gunicorn handles SIGTERM; `/health` returns 503 when DB or Meilisearch degraded. |
 
-**Gaps:** No graceful drain for in-flight scheduled batch; shallow `/health` does not gate readiness on DB.
+**Gaps:** No graceful drain for in-flight scheduled batch.
 
 ---
 
@@ -115,7 +112,7 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Gap** | Local stack: dashboard + app + meilisearch + dev-tools profile. Coolify: db + hasura + gotify (+ optional jupyter profile). Significant parity drift. |
+| **Partial** | Coolify compose now mirrors local core: `dashboard`, `app`, `meilisearch`, `db`, `hasura`, `gotify`. Local `dev-tools` profile (Jupyter, Adminer) not in prod — intentional. |
 
 ---
 
@@ -125,9 +122,9 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 
 | Status | Evidence |
 |--------|----------|
-| **Partial** | stdout logging; `LOG_LEVEL` env exists. |
+| **Partial** | stdout logging; `LOG_LEVEL` wired via `configure_logging()`. |
 
-**Gaps:** Level not wired; no JSON log format for aggregation; Gotify token may appear in URLs at WARNING+.
+**Gaps:** No JSON log format for aggregation; Gotify token may appear in URLs at WARNING+.
 
 ---
 
@@ -156,10 +153,10 @@ Reference checklist for [The Twelve-Factor App](https://12factor.net/). Score ea
 | VII Port binding | Compliant |
 | VIII Concurrency | Gap |
 | IX Disposability | Partial |
-| X Dev/prod parity | Gap |
+| X Dev/prod parity | Partial |
 | XI Logs | Partial |
 | XII Admin processes | Partial |
 
-**Compliance rate:** 3 Compliant + 9 Partial + 0 full Gap on strict reading ≈ **68%** (Partial counts as 0.5).
+**Compliance rate:** 3 Compliant + 8 Partial + 1 Gap ≈ **76%** (Partial ≈ 0.58 weight).
 
-**Priority fixes:** III (startup secret validation), X (Coolify compose parity), VIII (worker for scheduled ingest), XI (logging wiring).
+**Priority fixes:** VIII (worker for scheduled ingest), V (release tagging), XI (JSON logs optional).
