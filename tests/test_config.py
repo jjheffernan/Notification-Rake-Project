@@ -1,6 +1,8 @@
+import logging
+
 import pytest
 
-from notification_rake.config import Settings
+from notification_rake.config import Settings, configure_logging
 
 _PRODUCTION_SECRETS = {
     "postgres_password": "prod-pg-secret",
@@ -55,3 +57,29 @@ def test_production_accepts_real_secrets():
     s = Settings(_env_file=None, rake_env="production", **_PRODUCTION_SECRETS)
     assert s.rake_env == "production"
     assert s.postgres_password == "prod-pg-secret"
+
+
+def test_log_level_from_env(monkeypatch):
+    monkeypatch.setenv("LOG_LEVEL", "debug")
+    s = Settings(_env_file=None)
+    assert s.log_level == "debug"
+
+
+@pytest.mark.parametrize(
+    "level,expected",
+    [
+        ("DEBUG", logging.DEBUG),
+        ("info", logging.INFO),
+        ("Warning", logging.WARNING),
+        ("ERROR", logging.ERROR),
+    ],
+)
+def test_configure_logging_sets_levels(level, expected):
+    configure_logging(level)
+    assert logging.getLogger().level == expected
+    assert logging.getLogger("notification_rake").level == expected
+
+
+def test_configure_logging_rejects_invalid_level():
+    with pytest.raises(ValueError, match="Invalid log level"):
+        configure_logging("TRACE")
