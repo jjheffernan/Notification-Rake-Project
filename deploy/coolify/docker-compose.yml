@@ -40,6 +40,53 @@ services:
     labels:
       - traefik.enable=true
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:?set MEILISEARCH_API_KEY}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+      target: dashboard
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      RAKE_ENV: production
+      DASHBOARD_SECRET_KEY: ${DASHBOARD_SECRET_KEY:?set DASHBOARD_SECRET_KEY}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+
+  app:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+      target: app
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      RAKE_ENV: production
+      RAKE_SCRIPTS_DIR: /app/scripts
+    depends_on:
+      db:
+        condition: service_healthy
+      hasura:
+        condition: service_started
+      meilisearch:
+        condition: service_started
+
   jupyter:
     profiles: [dev-tools]
     build:
@@ -58,3 +105,4 @@ services:
 volumes:
   pgdata:
   gotify_data:
+  meilisearch_data:
