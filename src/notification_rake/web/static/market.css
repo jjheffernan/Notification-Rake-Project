@@ -4,6 +4,59 @@
   padding-top: 0;
 }
 
+.market-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: min(100%, 28rem);
+}
+
+.market-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+  border: 1px solid var(--rake-border);
+  border-radius: var(--rake-radius);
+  background: var(--rake-surface);
+  box-shadow: var(--rake-shadow);
+}
+
+.market-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rake-space-3);
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--rake-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.market-suggestion:hover,
+.market-suggestion.is-active {
+  background: var(--rake-surface-hover);
+}
+
+.market-suggestion__meta {
+  color: var(--rake-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.market-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rake-space-3);
+}
+
 /* ——— Classic.com-style sales analytics panel ——— */
 
 .classic-market {

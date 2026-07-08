@@ -18,7 +18,7 @@ Public buyer UI at `/`. No authentication. Flask + Jinja2 + Leaflet.
 | Region | `country` | ISO code (`US`, `JP`, …) |
 | Year range | `year_min`, `year_max` | |
 | Price range | `price_min`, `price_max` | USD for US listings |
-| Radius | `radius_km` → `radius_m` | From **search center** (blue dot), not live map pan |
+| Radius | `radius` → `radius_m` | Display in km or mi (nav toggle); API always meters |
 | Sort | `sort` | `updated_desc`, `price_asc`, `price_desc`, `year_desc`, `distance` |
 
 ## Search backend

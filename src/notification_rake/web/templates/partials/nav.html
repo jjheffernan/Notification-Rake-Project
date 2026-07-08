@@ -1,6 +1,10 @@
 <header class="topbar">
   <div class="brand">Notification Rake</div>
   <button type="button" class="topbar__toggle" data-nav-toggle aria-expanded="false" aria-label="Open menu">Menu</button>
+  <div class="topbar__units ui-segment" role="group" aria-label="Distance unit">
+    <button type="button" class="ui-segment__btn" data-distance-unit="km" aria-pressed="true">km</button>
+    <button type="button" class="ui-segment__btn" data-distance-unit="mi" aria-pressed="false">mi</button>
+  </div>
   <nav>
     <a href="/"{% if nav_active == "search" %} class="active"{% endif %}>Search</a>
     <a href="/m"{% if nav_active == "market" %} class="active"{% endif %}>Market data</a>

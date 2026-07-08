@@ -4,6 +4,73 @@
  */
 (function (global) {
   const PROFILE_KEY = "rake_profile_id";
+  const DISTANCE_UNIT_KEY = "rake_distance_unit";
+  const METERS_PER_KM = 1000;
+  const METERS_PER_MI = 1609.344;
+
+  function getDistanceUnit() {
+    const stored = localStorage.getItem(DISTANCE_UNIT_KEY);
+    return stored === "mi" ? "mi" : "km";
+  }
+
+  function setDistanceUnit(unit) {
+    const prev = getDistanceUnit();
+    const next = unit === "mi" ? "mi" : "km";
+    if (prev === next) return next;
+    localStorage.setItem(DISTANCE_UNIT_KEY, next);
+    syncDistanceUnitToggle(next);
+    refreshDistanceLabels();
+    document.dispatchEvent(
+      new CustomEvent("rake:distance-unit", { detail: { unit: next, prev } }),
+    );
+    return next;
+  }
+
+  function displayToMeters(value, unit = getDistanceUnit()) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.round(n * (unit === "mi" ? METERS_PER_MI : METERS_PER_KM));
+  }
+
+  function formatDistance(meters) {
+    if (meters == null) return "";
+    const n = Number(meters);
+    if (getDistanceUnit() === "mi") {
+      return `${(n / METERS_PER_MI).toFixed(1)} mi`;
+    }
+    return `${(n / METERS_PER_KM).toFixed(1)} km`;
+  }
+
+  function formatKm(meters) {
+    return formatDistance(meters);
+  }
+
+  function refreshDistanceLabels(root = document) {
+    root.querySelectorAll("[data-distance-m]").forEach((el) => {
+      const m = Number(el.dataset.distanceM);
+      if (Number.isFinite(m)) el.textContent = formatDistance(m);
+    });
+  }
+
+  function syncDistanceUnitToggle(unit = getDistanceUnit()) {
+    document.querySelectorAll("[data-distance-unit]").forEach((btn) => {
+      const active = btn.dataset.distanceUnit === unit;
+      btn.classList.toggle("active", active);
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  }
+
+  function initDistanceUnitToggle() {
+    const unit = getDistanceUnit();
+    syncDistanceUnitToggle(unit);
+    document.querySelectorAll("[data-distance-unit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.distanceUnit === getDistanceUnit()) return;
+        setDistanceUnit(btn.dataset.distanceUnit);
+      });
+    });
+  }
 
   function escapeHtml(text) {
     return String(text ?? "")
@@ -21,11 +88,6 @@
   function formatNum(value) {
     if (value == null) return "—";
     return Number(value).toLocaleString();
-  }
-
-  function formatKm(meters) {
-    if (meters == null) return "";
-    return `${(Number(meters) / 1000).toFixed(1)} km`;
   }
 
   function formatWhen(iso) {
@@ -104,7 +166,7 @@
             <div class="ui-card__meta">
               <span>${escapeHtml(makeModel || "Unknown")}</span>
               ${item.year ? `<span>Year ${item.year}</span>` : ""}
-              ${item.meters != null ? `<span>${formatKm(item.meters)}</span>` : ""}
+              ${item.meters != null ? `<span data-distance-m="${item.meters}">${formatDistance(item.meters)}</span>` : ""}
               ${item.country ? `<span>${escapeHtml(item.country)}</span>` : ""}
               ${item.price_events > 1 ? `<span>${item.price_events} price events</span>` : ""}
             </div>
@@ -204,7 +266,15 @@
   global.Rake = {
     PROFILE_KEY,
     escapeHtml,
-    format: { price: formatPrice, num: formatNum, km: formatKm, when: formatWhen },
+    format: { price: formatPrice, num: formatNum, km: formatKm, distance: formatDistance, when: formatWhen },
+    units: {
+      getDistanceUnit,
+      setDistanceUnit,
+      displayToMeters,
+      refreshDistanceLabels,
+      METERS_PER_KM,
+      METERS_PER_MI,
+    },
     ui: {
       badge,
       badges,
@@ -232,10 +302,12 @@
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       initMobileNav();
+      initDistanceUnitToggle();
       updateSignedInNav();
     });
   } else {
     initMobileNav();
+    initDistanceUnitToggle();
     updateSignedInNav();
   }
 })(window);

@@ -1,8 +1,11 @@
 /** Unified search dashboard — decoupled map viewport vs search radius, cached lazy load */
 
-const { format, ui } = window.Rake;
+const { format, ui, units } = window.Rake;
 const formatPrice = format.price;
-const formatKm = format.km;
+
+const radiusInput = document.getElementById("radius");
+const radiusHint = document.getElementById("radius-hint");
+const DEFAULT_RADIUS_M = 50_000;
 
 const feed = document.getElementById("feed");
 const sentinel = document.getElementById("sentinel");
@@ -16,6 +19,9 @@ const saveSearchBtn = document.getElementById("save-search-btn");
 const detailDialog = document.getElementById("detail-dialog");
 const detailContent = document.getElementById("detail-content");
 const viewButtons = document.querySelectorAll(".view-btn");
+const searchPanel = document.getElementById("search-panel");
+const toggleFiltersBtn = document.getElementById("toggle-filters-btn");
+const collapseResultsBtn = document.getElementById("collapse-results-btn");
 
 const DEFAULT = window.RAKE_DEFAULT || { lat: 37.7749, lon: -122.4194 };
 const SAVED_KEY = "rake_saved_searches";
@@ -58,8 +64,26 @@ function card(item) {
 
 function radiusMeters() {
   const fd = new FormData(form);
-  const radiusKm = parseFloat(fd.get("radius_km") || "50");
-  return Math.round(radiusKm * 1000);
+  return units.displayToMeters(fd.get("radius")) ?? DEFAULT_RADIUS_M;
+}
+
+function applyRadiusDisplay(meters, unit = units.getDistanceUnit()) {
+  if (!radiusInput) return;
+  if (unit === "mi") {
+    radiusInput.min = "1";
+    radiusInput.max = "311";
+    radiusInput.value = String(Math.max(1, Math.round(meters / units.METERS_PER_MI)));
+    if (radiusHint) {
+      radiusHint.textContent = "mi radius from search center — pan the map to explore loaded pins";
+    }
+  } else {
+    radiusInput.min = "1";
+    radiusInput.max = "500";
+    radiusInput.value = String(Math.max(1, Math.round(meters / units.METERS_PER_KM)));
+    if (radiusHint) {
+      radiusHint.textContent = "km radius from search center — pan the map to explore loaded pins";
+    }
+  }
 }
 
 function buildFilterParams(extra = {}) {
@@ -70,7 +94,7 @@ function buildFilterParams(extra = {}) {
   }
   if (!fd.get("import_us")) params.delete("import_us");
   if (!fd.get("import_ca")) params.delete("import_ca");
-  params.delete("radius_km");
+  params.delete("radius");
   params.set("lat", String(searchCenter.lat));
   params.set("lon", String(searchCenter.lon));
   params.set("radius_m", String(radiusMeters()));
@@ -434,11 +458,25 @@ function setSearchCenterFromMap() {
   searchCenter = { lat: c.lat, lon: c.lng };
 }
 
+function setSearchPanelCompact(compact) {
+  searchPanel?.classList.toggle("search-panel--compact", compact);
+  if (!hasSearched) {
+    toggleFiltersBtn?.classList.add("hidden");
+    return;
+  }
+  toggleFiltersBtn?.classList.remove("hidden");
+  if (toggleFiltersBtn) {
+    toggleFiltersBtn.textContent = compact ? "Show filters" : "Hide filters";
+    toggleFiltersBtn.setAttribute("aria-expanded", compact ? "false" : "true");
+  }
+}
+
 function beginSearch({ recenterFromMap = false } = {}) {
   if (recenterFromMap || !hasSearched) {
     setSearchCenterFromMap();
   }
   hasSearched = true;
+  setSearchPanelCompact(true);
   searchAreaBtn?.classList.add("hidden");
   resetFeed();
   clearMarkers();
@@ -448,11 +486,18 @@ function beginSearch({ recenterFromMap = false } = {}) {
 }
 
 function setViewMode(mode) {
-  resultsSection.classList.remove("view-split", "view-list", "view-map");
+  resultsSection.classList.remove(
+    "view-split",
+    "view-list",
+    "view-map",
+    "view-map-primary",
+    "results-panel--collapsed",
+  );
   resultsSection.classList.add(`view-${mode}`);
   viewButtons.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === mode);
   });
+  collapseResultsBtn?.classList.toggle("hidden", mode !== "map-primary");
   if (map) setTimeout(() => map.invalidateSize(), 120);
 }
 
@@ -462,7 +507,7 @@ form.addEventListener("submit", (e) => {
 });
 
 form.addEventListener("change", (e) => {
-  if (e.target.name === "radius_km") {
+  if (e.target.name === "radius") {
     updateRadiusCircle();
   }
   if (e.target.name === "country" && e.target.value && map) {
@@ -489,6 +534,17 @@ viewButtons.forEach((btn) => {
   btn.addEventListener("click", () => setViewMode(btn.dataset.view));
 });
 
+toggleFiltersBtn?.addEventListener("click", () => {
+  const compact = searchPanel?.classList.contains("search-panel--compact");
+  setSearchPanelCompact(!compact);
+});
+
+collapseResultsBtn?.addEventListener("click", () => {
+  const collapsed = resultsSection.classList.toggle("results-panel--collapsed");
+  collapseResultsBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  if (map) setTimeout(() => map.invalidateSize(), 120);
+});
+
 searchAreaBtn?.addEventListener("click", () => {
   beginSearch({ recenterFromMap: true });
 });
@@ -508,8 +564,20 @@ const observer = new IntersectionObserver((entries) => {
 
 observer.observe(sentinel);
 
+applyRadiusDisplay(
+  units.displayToMeters(radiusInput?.value) ?? DEFAULT_RADIUS_M,
+);
+
+document.addEventListener("rake:distance-unit", (e) => {
+  const meters =
+    units.displayToMeters(radiusInput?.value, e.detail.prev) ?? DEFAULT_RADIUS_M;
+  applyRadiusDisplay(meters, e.detail.unit);
+  updateRadiusCircle();
+});
+
 initMap();
 updateSearchCenterMarker();
 loadRoutes();
 loadMarketSummary();
+setViewMode("map-primary");
 beginSearch();

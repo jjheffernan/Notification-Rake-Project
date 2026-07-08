@@ -119,6 +119,16 @@ a {
   white-space: nowrap;
 }
 
+.topbar__units {
+  margin-left: auto;
+}
+
+.topbar__units .ui-segment__btn {
+  min-width: 2.5rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.8rem;
+}
+
 .topbar nav {
   display: flex;
   align-items: center;

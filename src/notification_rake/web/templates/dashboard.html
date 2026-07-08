@@ -5,9 +5,14 @@
 {% endblock %}
 {% block body %}
   <main class="ui-main ui-page--wide search-layout">
-    <section class="search-panel ui-hero">
-      <h1 class="ui-page-title">All listings. One search.</h1>
-      <p class="subtitle">Multi-source market view — filter, map, and price history. No sign-in required.</p>
+    <section class="search-panel ui-hero" id="search-panel">
+      <div class="search-panel__head">
+        <div>
+          <h1 class="ui-page-title">All listings. One search.</h1>
+          <p class="subtitle">Multi-source market view — filter, map, and price history. No sign-in required.</p>
+        </div>
+        <button type="button" id="toggle-filters-btn" class="ui-btn ui-btn--secondary search-panel__toggle hidden" aria-expanded="true">Hide filters</button>
+      </div>
 
       <form id="search-form" class="ui-form search-form ui-panel">
         <div class="ui-field">
@@ -52,7 +57,7 @@
               {% endfor %}
             </select>
           </div>
-          <div class="ui-field"><input class="ui-input" name="radius_km" id="radius_km" type="number" value="50" min="1" max="500" /></div>
+          <div class="ui-field"><input class="ui-input" name="radius" id="radius" type="number" value="50" min="1" max="500" step="1" aria-labelledby="radius-label" /></div>
           <div class="ui-field">
             <select class="ui-select" name="sort" id="sort">
               <option value="updated_desc">Newest</option>
@@ -63,31 +68,34 @@
             </select>
           </div>
         </div>
-        <span class="hint">km radius from search center — pan the map to explore loaded pins</span>
+        <span class="hint" id="radius-hint">km radius from search center — pan the map to explore loaded pins</span>
         <div class="action-row">
           <button type="submit" class="ui-btn ui-btn--primary">Search</button>
           <button type="button" id="save-search-btn" class="ui-btn ui-btn--secondary">Save search</button>
           <div class="ui-segment view-switch" role="group" aria-label="Results layout">
-            <button type="button" class="ui-segment__btn view-btn active" data-view="split">Split</button>
+            <button type="button" class="ui-segment__btn view-btn active" data-view="map-primary">Map</button>
+            <button type="button" class="ui-segment__btn view-btn" data-view="split">Split</button>
             <button type="button" class="ui-segment__btn view-btn" data-view="list">List</button>
-            <button type="button" class="ui-segment__btn view-btn" data-view="map">Map</button>
           </div>
         </div>
       </form>
 
       <div id="market-summary" class="market-summary"></div>
-      <p id="stats" class="ui-status stats"></p>
     </section>
 
-    <section id="results-section" class="results-section view-split">
+    <section id="results-section" class="results-section view-map-primary">
       <div id="map-panel" class="map-panel">
         <div id="map"></div>
         <button type="button" id="search-area-btn" class="ui-btn ui-btn--secondary search-area-btn hidden">Search this area</button>
       </div>
 
       <div id="results-panel" class="results-panel">
+        <div class="results-panel__head">
+          <p id="stats" class="ui-status stats results-panel__stats"></p>
+          <button type="button" id="collapse-results-btn" class="ui-btn ui-btn--secondary results-panel__collapse" aria-expanded="true" title="Collapse results">⟩</button>
+        </div>
         <div id="source-tabs" class="source-tabs ui-segment"></div>
-        <div id="feed" class="feed ui-grid ui-grid--3" aria-live="polite"></div>
+        <div id="feed" class="feed" aria-live="polite"></div>
         <div id="sentinel" class="sentinel">Loading…</div>
       </div>
     </section>

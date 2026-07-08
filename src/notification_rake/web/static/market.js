@@ -4,6 +4,96 @@ const { format, ui } = window.Rake;
 const formatPrice = format.price;
 const formatNum = format.num;
 
+function normalizeMarketQuery(text) {
+  return String(text ?? "").toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function marketTokens(text) {
+  return normalizeMarketQuery(text).split(" ").filter(Boolean);
+}
+
+/** ponytail: subsequence + prefix + 1-edit; upgrade path: fuse.js */
+function subsequenceMatch(needle, haystack) {
+  if (!needle) return true;
+  let i = 0;
+  for (const c of haystack) {
+    if (c === needle[i]) i += 1;
+    if (i === needle.length) return true;
+  }
+  return false;
+}
+
+function levenshteinWithin(a, b, maxDist = 2) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  if (Math.abs(a.length - b.length) > maxDist) return maxDist + 1;
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    let prev = row[0];
+    row[0] = i;
+    let rowMin = row[0];
+    for (let j = 1; j <= b.length; j += 1) {
+      const tmp = row[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + cost);
+      prev = tmp;
+      rowMin = Math.min(rowMin, row[j]);
+    }
+    if (rowMin > maxDist) return maxDist + 1;
+  }
+  return row[b.length];
+}
+
+function tokenMatchScore(token, words, fullHay) {
+  let best = 0;
+  for (const word of words) {
+    if (word === token) best = Math.max(best, 95);
+    else if (word.startsWith(token)) best = Math.max(best, 85);
+    else if (word.includes(token)) best = Math.max(best, 70);
+    else if (subsequenceMatch(token, word)) best = Math.max(best, 55);
+    else if (token.length >= 3 && levenshteinWithin(token, word) <= 1) {
+      best = Math.max(best, 50);
+    }
+  }
+  if (fullHay.includes(token)) best = Math.max(best, 65);
+  else if (subsequenceMatch(token, fullHay)) best = Math.max(best, 45);
+  return best;
+}
+
+function scoreMarketModel(item, query) {
+  const q = normalizeMarketQuery(query);
+  if (!q) return 0;
+  const hay = normalizeMarketQuery(`${item.make} ${item.model}`);
+  const compactHay = hay.replace(/\s+/g, "");
+  const compactQ = q.replace(/\s+/g, "");
+  if (hay === q) return 200;
+  if (hay.startsWith(q)) return 150;
+  if (hay.includes(q)) return 120;
+  if (compactHay.includes(compactQ)) return 110;
+
+  const tokens = marketTokens(q);
+  const words = hay.split(" ").filter(Boolean);
+  let total = 0;
+  for (const token of tokens) {
+    const hit = tokenMatchScore(token, words, hay);
+    if (!hit) return 0;
+    total += hit;
+  }
+  return total / tokens.length;
+}
+
+function rankMarketModels(items, query) {
+  const q = normalizeMarketQuery(query);
+  if (!q) {
+    return items.map((item) => ({ item, score: 0 }));
+  }
+  return items
+    .map((item) => ({ item, score: scoreMarketModel(item, query) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score);
+}
+
 async function fetchMarketIndex() {
   const resp = await fetch("/api/market/models");
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -45,6 +135,8 @@ let marketFilterState = {
 function renderIndexCard(item) {
   const article = document.createElement("article");
   article.className = "ui-card market-card";
+  article.dataset.make = item.make;
+  article.dataset.model = item.model;
   article.dataset.q = `${item.make} ${item.model}`.toLowerCase();
   const yearRange =
     item.year_min && item.year_max ? `${item.year_min}–${item.year_max}` : "";
@@ -68,8 +160,78 @@ function initIndexPage() {
   const grid = document.getElementById("market-grid");
   const empty = document.getElementById("market-empty");
   const filter = document.getElementById("market-filter");
+  const suggestions = document.getElementById("market-suggestions");
   const countEl = document.getElementById("market-count");
+  const cardByKey = new Map();
   let items = [];
+  let activeSuggestion = -1;
+
+  function cardKey(item) {
+    return `${item.make}\0${item.model}`;
+  }
+
+  function hideSuggestions() {
+    suggestions?.classList.add("hidden");
+    filter?.setAttribute("aria-expanded", "false");
+    activeSuggestion = -1;
+    suggestions?.querySelectorAll(".market-suggestion").forEach((el) => {
+      el.classList.remove("is-active");
+    });
+  }
+
+  function renderSuggestions(ranked) {
+    if (!suggestions || !filter) return;
+    suggestions.innerHTML = "";
+    const top = ranked.slice(0, 8);
+    if (!top.length || !filter.value.trim()) {
+      hideSuggestions();
+      return;
+    }
+    top.forEach(({ item }, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "market-suggestion";
+      btn.role = "option";
+      btn.id = `market-suggestion-${idx}`;
+      btn.dataset.url = item.url;
+      btn.innerHTML = `<span class="market-suggestion__label">${item.make} ${item.model}</span><span class="market-suggestion__meta">${item.listings} listings</span>`;
+      btn.addEventListener("mousedown", (e) => e.preventDefault());
+      btn.addEventListener("click", () => {
+        window.location.href = item.url;
+      });
+      suggestions.appendChild(btn);
+    });
+    suggestions.classList.remove("hidden");
+    filter.setAttribute("aria-expanded", "true");
+  }
+
+  function applyMarketFilter() {
+    const q = filter?.value ?? "";
+    const ranked = rankMarketModels(items, q);
+    const visibleKeys = new Set(ranked.map(({ item }) => cardKey(item)));
+
+    if (q.trim()) {
+      ranked.forEach(({ item }) => {
+        const el = cardByKey.get(cardKey(item));
+        if (el) grid.appendChild(el);
+      });
+    }
+
+    cardByKey.forEach((el, key) => {
+      const show = !q.trim() || visibleKeys.has(key);
+      el.classList.toggle("hidden", !show);
+    });
+
+    const visible = q.trim() ? ranked.length : items.length;
+    countEl.textContent = q.trim()
+      ? `${visible} of ${items.length} models`
+      : `${items.length} models indexed`;
+    empty.textContent = q.trim()
+      ? `No models match “${q.trim()}”.`
+      : "No indexed models yet — run ingest to populate market data.";
+    empty.classList.toggle("hidden", visible > 0);
+    renderSuggestions(ranked);
+  }
 
   fetchMarketIndex()
     .then((data) => {
@@ -79,18 +241,51 @@ function initIndexPage() {
         empty.classList.remove("hidden");
         return;
       }
-      items.forEach((item) => grid.appendChild(renderIndexCard(item)));
+      items.forEach((item) => {
+        const card = renderIndexCard(item);
+        cardByKey.set(cardKey(item), card);
+        grid.appendChild(card);
+      });
     })
     .catch((err) => {
       empty.textContent = `Failed to load market index: ${err.message}`;
       empty.classList.remove("hidden");
     });
 
-  filter?.addEventListener("input", () => {
-    const q = filter.value.trim().toLowerCase();
-    grid.querySelectorAll(".market-card").forEach((el) => {
-      el.classList.toggle("hidden", q !== "" && !el.dataset.q.includes(q));
+  filter?.addEventListener("input", applyMarketFilter);
+
+  filter?.addEventListener("keydown", (e) => {
+    const opts = [...(suggestions?.querySelectorAll(".market-suggestion") || [])];
+    if (!opts.length || suggestions?.classList.contains("hidden")) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeSuggestion = Math.min(activeSuggestion + 1, opts.length - 1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeSuggestion = Math.max(activeSuggestion - 1, 0);
+    } else if (e.key === "Enter" && activeSuggestion >= 0) {
+      e.preventDefault();
+      const url = opts[activeSuggestion]?.dataset.url;
+      if (url) window.location.href = url;
+      return;
+    } else if (e.key === "Escape") {
+      hideSuggestions();
+      return;
+    } else {
+      return;
+    }
+
+    opts.forEach((el, idx) => {
+      el.classList.toggle("is-active", idx === activeSuggestion);
     });
+    if (activeSuggestion >= 0) {
+      filter.setAttribute("aria-activedescendant", opts[activeSuggestion].id);
+    }
+  });
+
+  filter?.addEventListener("blur", () => {
+    setTimeout(hideSuggestions, 150);
   });
 }
 

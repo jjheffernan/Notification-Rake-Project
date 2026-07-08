@@ -141,6 +141,8 @@ def test_market_index_page():
     resp = client.get("/m")
     assert resp.status_code == 200
     assert b"Market data" in resp.data
+    assert b"market-suggestions" in resp.data
+    assert b"classic.com" not in resp.data
 
 
 def test_accounts_page():

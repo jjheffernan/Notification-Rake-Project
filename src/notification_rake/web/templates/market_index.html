@@ -6,11 +6,14 @@
   <main class="ui-main market-page">
     <section class="ui-hero market-hero">
       <h1 class="ui-page-title">Market data</h1>
-      <p class="subtitle">Browse make/model price trends, comps, and source breakdown — like a classic.com data view.</p>
+      <p class="subtitle">Browse make/model price trends, comps, and source breakdown.</p>
     </section>
 
     <section class="ui-toolbar market-toolbar">
-      <input class="ui-input ui-search-input" type="search" id="market-filter" placeholder="Filter makes and models…" autocomplete="off" />
+      <div class="market-search-wrap">
+        <input class="ui-input ui-search-input" type="search" id="market-filter" placeholder="Filter makes and models…" autocomplete="off" aria-autocomplete="list" aria-controls="market-suggestions" aria-expanded="false" />
+        <div id="market-suggestions" class="market-suggestions hidden" role="listbox" aria-label="Model suggestions"></div>
+      </div>
       <p id="market-count" class="ui-status stats"></p>
     </section>
 
