@@ -37,7 +37,13 @@ def _create_profile(client) -> str:
     return profile_id
 
 
-def _sample_watchlist(profile_id: str, *, search_id: str = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa") -> ScheduledSearch:
+WATCHLIST_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+ACCOUNT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+
+
+def _sample_watchlist(
+    profile_id: str, *, search_id: str = WATCHLIST_ID
+) -> ScheduledSearch:
     return ScheduledSearch(
         id=search_id,
         profile_id=profile_id,
@@ -56,7 +62,9 @@ def _sample_watchlist(profile_id: str, *, search_id: str = "aaaaaaaa-aaaa-4aaa-8
     )
 
 
-def _sample_account(profile_id: str, *, account_id: str = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb") -> ConnectedAccount:
+def _sample_account(
+    profile_id: str, *, account_id: str = ACCOUNT_ID
+) -> ConnectedAccount:
     return ConnectedAccount(
         id=account_id,
         profile_id=profile_id,
@@ -198,7 +206,7 @@ def test_watchlist_add_list_remove_flow(client):
 
 
 def test_watchlist_other_profile_cannot_delete(client):
-    profile_id = _create_profile(client)
+    _create_profile(client)
     search_id = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
     with patch(
         "notification_rake.web.blueprints.public.delete_scheduled_search",
@@ -257,7 +265,7 @@ def test_accounts_connect_list_disconnect_flow(client):
 
 
 def test_accounts_other_profile_sees_empty_list(client):
-    profile_id = _create_profile(client)
+    _create_profile(client)
     with patch(
         "notification_rake.web.blueprints.public.list_accounts",
         return_value=[],
