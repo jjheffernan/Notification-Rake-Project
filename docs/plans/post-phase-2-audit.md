@@ -1,6 +1,126 @@
-# Post-Phase 2 audit
+# Post–Phase 2 audit
 
-Living notes from post-Phase 2 audit swarms (gap analysis, UX tests, notifications). Each swarm appends a section below.
+**Date:** 2026-07-08  
+Living notes from post-Phase 2 audit swarms (gap analysis, UX tests, notifications).
+
+**Scope:** Phases 0–2 merged on `main`. Evidence from code + compose + CI, compared to `docs/plans/application-buildout-prd.md`, `docs/reference/readiness-score.md`, `docs/reference/twelve-factor-compliance.md`, `docs/reference/security-practices.md`, and `PLAN.md`.
+
+**Scores (from `PLAN.md`, not re-scored here):** readiness ~74, security ~68, 12-factor ~75%, composite ~72. Launch targets: readiness ≥80, security ≥65, 12-factor ≥85%.
+
+---
+
+## Gap audit
+
+### Executive summary — top 5 blockers for staging / public
+
+1. **No background worker or cron for watchlist batches (Phase 3)** — Due searches only run when a buyer clicks “Run due” or an operator triggers admin/cron script; `run_scheduled_batch` still executes inside the HTTP request (`src/notification_rake/web/blueprints/public.py`, `workflow/scheduled_batch.py`). No Redis/worker in `docker-compose.yml` or `deploy/coolify/docker-compose.yml`.
+2. **No staging gate or E2E smoke in CI (Phase 1.6 partial, 4.4)** — `scripts/ops/smoke_deploy.sh` exists but is not invoked from `.github/workflows/ci.yml`; `deploy` job fires Coolify webhook on `main` push without a compose smoke pass.
+3. **No PG backup automation or incident runbook (Phase 4.1–4.2)** — No `docs/operations/incidents.md`; no backup/restore scripts or docs beyond rubric placeholders (`docs/reference/readiness-score.md` §4, §8).
+4. **Buyer watchlist alerts are operator-global, not per-profile** — All alerts go through one `GOTIFY_TOKEN` (`src/notification_rake/notifications/alerts.py`, `integrations/gotify.py`); no profile→channel mapping. Multi-buyer public hosting cannot deliver personal alerts.
+5. **Coolify ingress wider than PRD/security bar** — `hasura` and `gotify` have `traefik.enable=true` in `deploy/coolify/docker-compose.yml`; security reference expects least-privilege (dashboard + required APIs only). Hasura console + Gotify UI enlarge attack surface on a public host.
+
+**Secondary (not top-5 but actionable):** stale operator docs (`SECURITY.md`, `docs/wiki/Deployment.md` still describe pre–Phase 1/2 state); `pip-audit` allowed to fail in CI (`continue-on-error: true`); in-memory rate limits not shared across gunicorn workers (`src/notification_rake/web/rate_limit.py`); composite/readiness still below launch grade B.
+
+---
+
+### Gap table
+
+| Gap | Severity | Phase / task | Evidence |
+|-----|----------|--------------|----------|
+| Scheduled batch runs in-request; no worker queue | **P0** | 3.1, 3.2 | `src/notification_rake/web/blueprints/public.py` (`POST /api/scheduled-searches/run`), `src/notification_rake/workflow/scheduled_batch.py`, no `redis`/`worker` in `docker-compose.yml`, `deploy/coolify/docker-compose.yml` |
+| No cron / Coolify scheduled task for due searches | **P0** | 3.3 | `scripts/ops/run_scheduled_searches.py` (CLI only), no `cron`/`schedule` in compose files |
+| Smoke script not wired into CI; deploy not gated | **P0** | 1.6, 4.4 | `scripts/ops/smoke_deploy.sh`, `.github/workflows/ci.yml` (no smoke step; `deploy` webhook only) |
+| No PG backup + tested restore | **P0** | 4.1 | No backup scripts under `scripts/ops/`; rubric gap in `docs/reference/readiness-score.md` |
+| No incident / rollback runbook | **P1** | 4.2 | `docs/operations/` absent; `docs/reference/security-practices.md` §9 |
+| Per-buyer alerts undefined (global Gotify) | **P0** | PRD §Users (alerts) | `src/notification_rake/notifications/alerts.py`, `src/notification_rake/integrations/gotify.py` |
+| Hasura + Gotify public on Traefik | **P1** | 1.2 / security §2 | `deploy/coolify/docker-compose.yml` (`hasura`, `gotify` labels) vs `docs/reference/security-practices.md` |
+| Buyer identity is client UUID bearer (no server session) | **P1** | 4.3 (optional) | `src/notification_rake/web/static/rake.js`, `POST /api/profile` in `public.py` (generates UUID only) |
+| Rate limits process-local (weak under `--workers 2`) | **P2** | 2.4 follow-up | `src/notification_rake/web/rate_limit.py` (`ponytail:` comment) |
+| `pip-audit` non-blocking in CI | **P2** | 2.5 | `.github/workflows/ci.yml` `supply-chain` job `continue-on-error: true` |
+| No immutable release tagging on deploy | **P2** | 4.5, 12-factor V | `.github/workflows/ci.yml` `deploy` job (webhook only) |
+| Structured JSON logs not implemented | **P2** | 12-factor XI | `src/notification_rake/config.py` `configure_logging()` (level only) |
+| `SECURITY.md` stale (pre–Phase 0/2 claims) | **P2** | 0.5 follow-up | `SECURITY.md` lines 38–40 |
+| `docs/wiki/Deployment.md` stale (compose parity, env matrix) | **P2** | 1.3 follow-up | `docs/wiki/Deployment.md` § “Not yet in compose” vs `deploy/coolify/docker-compose.yml` |
+| `CREDENTIAL_ENCRYPTION_KEY` not in Coolify dashboard `environment:` block | **P2** | 2.1 ops | `deploy/coolify/docker-compose.yml` `dashboard` service (relies on `env_file` only) |
+| Readiness composite below launch target (~74 vs ≥80) | **P1** | 4 exit | `PLAN.md`, `docs/plans/application-buildout-prd.md` success metrics |
+| 12-factor compliance ~75% vs launch ≥85% | **P1** | VIII, X, XI | `docs/reference/twelve-factor-compliance.md`, worker + parity gaps above |
+| Prometheus / metrics not in prod compose | **P2** | readiness §3 | `docker-compose.yml` `prometheus` profile `dev-tools` only |
+| No OpenAPI / API reference | **P3** | readiness §5 | Wiki only per rubric |
+| PII retention / delete path undocumented | **P2** | readiness §4 | No policy doc under `docs/` |
+
+---
+
+### Undefined / broken user flows
+
+| Flow | Status | Evidence |
+|------|--------|----------|
+| **Sign in → search (no auth)** | OK | Search/market pages do not call `requireProfileId()` (`src/notification_rake/web/static/rake.js` only used on accounts/watchlist) |
+| **Sign in → watchlist → auto alerts** | **Broken / undefined** | No cron/worker; alerts require manual “Run due” or operator script. Alerts fan out to global Gotify, not the signed-in buyer |
+| **Sign in → connected account → sync** | Partial | API + UI exist (`accounts.js`, `POST /api/accounts/sync`); **no delete/disconnect in UI** though `DELETE /api/accounts/<id>` exists in `public.py` |
+| **Restore profile UUID** | **Undefined** | Client accepts any valid UUID (`signin.js`, `rake.js`); server never checks profile exists — empty accounts/watchlist with no error |
+| **Lose localStorage UUID** | **Data loss** | No server-side profile registry (`new_profile_id()` in `storage/accounts.py`); watchlist/accounts keyed only by client-held UUID |
+| **Long “Run all” on watchlist** | **Risk** | Synchronous ingest + search in request (`scheduled_batch.py`); proxy/load balancer timeout likely on large route sets |
+| **Operator scheduled batch** | Intentional global | Admin action `run_scheduled_searches` runs all profiles (`src/notification_rake/admin/console.py`); distinct from public API scoping |
+| **Watchlist job outcome per search** | Partial | UI shows `last_run_at` / match counts (`watchlist.js`); Phase 3.4 “outcome” / `metadata.job_run` not surfaced to buyers |
+
+---
+
+### PRD requirements not yet met
+
+**Launch success metrics (`application-buildout-prd.md`):**
+
+| Metric | Target | Current (PLAN.md) | Met? |
+|--------|--------|-------------------|------|
+| Readiness score | ≥80 | ~74 | No |
+| Security score | ≥65 | ~68 | Yes |
+| 12-factor compliance | ≥85% | ~75% | No |
+| Coolify compose parity | Full core stack | dashboard, app, meilisearch present | Yes |
+| Global batch without profile (public API) | No | `profile_id` required on `POST /api/scheduled-searches/run` | Yes |
+
+**Phase 3 — Background work (all open):**
+
+| ID | Requirement | Status |
+|----|-------------|--------|
+| 3.1 | Redis + worker in local + Coolify compose | Not started |
+| 3.2 | API enqueues; worker executes `run_scheduled_batch` | Not started |
+| 3.3 | Cron for due scheduled searches | Not started |
+| 3.4 | Job status (last run + outcome) on watchlist UI | Partial — timestamps only |
+
+**Phase 4 — Operations & launch (all open):**
+
+| ID | Requirement | Status |
+|----|-------------|--------|
+| 4.1 | PG backup automation + tested restore | Not started |
+| 4.2 | `docs/operations/incidents.md` | Not started |
+| 4.3 | Signed buyer session cookie (optional) | Not started |
+| 4.4 | E2E smoke in CI against compose | Not started |
+| 4.5 | Release tagging on deploy | Not started |
+
+**PRD user needs still incomplete:**
+
+| Actor | Unmet need |
+|-------|------------|
+| **Buyer** | Personal alerts (not global Gotify); automatic due-search runs without manual click |
+| **Operator** | Documented incident/rollback; backup restore drill |
+| **Maintainer** | CI-gated deploy; staging soak; accurate SECURITY/Deployment docs |
+
+**Phases 0–2 — verified merged (spot-check):**
+
+| ID | Acceptance | Evidence |
+|----|------------|----------|
+| 0.3 | `profile_id` on batch run | `public.py` `api_run_scheduled_searches`, `tests/test_scheduled_searches.py` |
+| 0.4 | Reject `change-me` in production | `config.py` `_reject_production_placeholders` |
+| 0.6 | Authz tests | `tests/test_accounts.py`, `tests/test_scheduled_searches.py` |
+| 1.1–1.2 | Coolify core stack + Traefik on dashboard | `deploy/coolify/docker-compose.yml` |
+| 1.4 | Deep `/health` | `public.py` `health()`, `tests/test_web.py` |
+| 1.5 | `LOG_LEVEL` wired | `config.py` `configure_logging()`, `web/__init__.py` |
+| 1.6 | Smoke script | `scripts/ops/smoke_deploy.sh` (manual only) |
+| 2.1–2.2 | Encrypt + mask credentials | `storage/credential_crypto.py`, `storage/accounts.py`, `tests/test_accounts.py` |
+| 2.3 | Admin CSRF + secure cookies | `web/auth.py`, `web/__init__.py`, `tests/test_web.py` |
+| 2.4 | Rate limits | `web/rate_limit.py`, `tests/test_rate_limit.py` |
+| 2.5 | Dependabot + pip-audit | `.github/dependabot.yml`, `.github/workflows/ci.yml` |
+
+**Recommended next actions:** Phase 3.1 worker-infra → 3.2–3.3 cron; Phase 4.4 CI smoke gate; docs janitor for `SECURITY.md` / `Deployment.md`; per-profile notifications (see below).
 
 ---
 
