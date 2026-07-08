@@ -26,6 +26,17 @@ Proxmox → LXC with Coolify → deploy/coolify/docker-compose.yml
 
 Track `vehicle_listing`, `vehicle_make`, `vehicle_model` in console after first deploy.
 
+## Post-deploy smoke
+
+After deploy (or local `docker compose up`):
+
+```bash
+./scripts/ops/smoke_deploy.sh                    # default http://127.0.0.1:8000
+./scripts/ops/smoke_deploy.sh https://staging.example
+```
+
+Checks `GET /health` and `GET /`; exits non-zero on failure.
+
 ## CI/CD
 
 `.github/workflows/ci.yml` — lint, pytest, Docker build on PR/push; webhook deploy on `main`.
