@@ -14,16 +14,16 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 
 | Metric | Score | Grade / status |
 |--------|-------|----------------|
-| **Production readiness** | ~65 / 100 | D+ — Phase 0 complete |
-| **12-factor compliance** | ~70% | Config validation added; parity still gap |
-| **Security posture** | ~56 / 100 | Authz + prod secrets; credentials still plaintext |
-| **Composite (avg)** | **~64 / 100** | Hardening in progress |
+| **Production readiness** | ~72 / 100 | C− — Phase 1 PRs ready |
+| **12-factor compliance** | ~75% | Compose parity + LOG_LEVEL; worker still gap |
+| **Security posture** | ~56 / 100 | Unchanged — Phase 2 next |
+| **Composite (avg)** | **~68 / 100** | Deploy path unblocked after merge |
 
 ### Development cycle position
 
 ```text
 [ Research ] → [ MVP / local ] → [ Hardening ] → [ Staging ] → [ Public launch ]
-                              ▲ YOU ARE HERE (Phase 0 ✅ → Phase 1)
+                              ▲ YOU ARE HERE (Phase 1 PRs → merge → Phase 2)
 ```
 
 | Stage | Status |
@@ -125,24 +125,24 @@ Each phase is a **deployable increment**. Prefer one **single-purpose sub-agent*
 
 ---
 
-### Phase 1 — Deploy parity (P0) ← **NEXT**
+### Phase 1 — Deploy parity (P0) ✅ PRs open
 
 **Goal:** Coolify stack matches local core services.
 
 | ID | Task | Pts | Sub-agent | Done |
 |----|------|-----|-----------|------|
-| 1.1 | Add `dashboard`, `app`, `meilisearch` to `deploy/coolify/docker-compose.yml` | 5 | `coolify-compose` | ⬜ |
-| 1.2 | Traefik labels for public dashboard only | 3 | `coolify-compose` | ⬜ |
-| 1.3 | Document Coolify env matrix in `docs/wiki/Deployment.md` | 2 | `docs-deploy` | ⬜ |
-| 1.4 | Deep `/health`: DB + Meilisearch ping | 3 | `health-endpoint` | ⬜ |
-| 1.5 | Wire `LOG_LEVEL` to Python logging | 2 | `config-hardening` | ⬜ |
-| 1.6 | Staging smoke script (`scripts/ops/smoke_deploy.sh`) | 3 | `ops-smoke` | ⬜ |
+| 1.1 | Add `dashboard`, `app`, `meilisearch` to `deploy/coolify/docker-compose.yml` | 5 | `coolify-compose` | ✅ [#6](https://github.com/jjheffernan/Notification-Rake-Project/pull/6) |
+| 1.2 | Traefik labels for public dashboard only | 3 | `coolify-compose` | ✅ [#6](https://github.com/jjheffernan/Notification-Rake-Project/pull/6) |
+| 1.3 | Document Coolify env matrix in `docs/wiki/Deployment.md` | 2 | `docs-deploy` | ✅ [#8](https://github.com/jjheffernan/Notification-Rake-Project/pull/8) |
+| 1.4 | Deep `/health`: DB + Meilisearch ping | 3 | `health-endpoint` | ✅ [#9](https://github.com/jjheffernan/Notification-Rake-Project/pull/9) |
+| 1.5 | Wire `LOG_LEVEL` to Python logging | 2 | `config-hardening` | ✅ [#7](https://github.com/jjheffernan/Notification-Rake-Project/pull/7) |
+| 1.6 | Staging smoke script (`scripts/ops/smoke_deploy.sh`) | 3 | `ops-smoke` | ✅ [#5](https://github.com/jjheffernan/Notification-Rake-Project/pull/5) |
 
-**Phase exit:** Readiness deployment score ≥7; 12-factor X (parity) → Partial.
+**Phase exit:** Pending merge — deployment parity in compose; deep health + smoke script ready.
 
 ---
 
-### Phase 2 — Credential & admin hardening (P1)
+### Phase 2 — Credential & admin hardening (P1) ← **NEXT**
 
 **Goal:** Protect marketplace credentials and operator surface.
 
@@ -219,6 +219,7 @@ Single-purpose agents — assign one task ID per invocation.
 |------|-----------|-----------|----------|-----------|-------|
 | 2026-06-24 | 62 | 68% | 47 | 59 | Baseline audit; Phase 0.1–0.2 done |
 | 2026-07-08 | ~65 | ~70% | ~56 | ~64 | Phase 0 merged (#1–#4); foundation `1fa176e` |
+| 2026-07-08 | ~72 | ~75% | ~56 | ~68 | Phase 1 swarms done; PRs #5–#9 open |
 
 ---
 
@@ -231,34 +232,15 @@ Single-purpose agents — assign one task ID per invocation.
 
 ---
 
-## Next actions (Phase 1 kickoff)
+## Next actions (Phase 2 kickoff)
 
-Run **one sub-agent per row** — same pattern as Phase 0.
+**Merge Phase 1** (CI green on all): `#5` → `#9`, then run `./scripts/ops/smoke_deploy.sh` against local compose.
 
-| Order | Task | Sub-agent | Command hint |
-|-------|------|-----------|----------------|
-| 1 | Coolify compose parity (1.1 + 1.2) | `coolify-compose` | `/to-issues` or spawn with `PLAN.md` 1.1 |
-| 2 | Deep `/health` (1.4) | `health-endpoint` | After 1.1 — needs services in compose |
-| 3 | `LOG_LEVEL` wiring (1.5) | `config-hardening` | Independent |
-| 4 | Wiki deploy env matrix (1.3) | `docs-deploy` | After 1.1 lands |
-| 5 | Smoke script (1.6) | `ops-smoke` | After 1.1 + 1.4 |
+| Order | Task | Sub-agent |
+|-------|------|-----------|
+| 1 | Encrypt connected-account config (2.1 + 2.2) | `credential-encrypt` |
+| 2 | Admin CSRF + secure cookies (2.3) | `admin-session` |
+| 3 | Rate limits (2.4) | `api-rate-limit` |
+| 4 | Dependabot (2.5) | `ci-supply-chain` |
 
-**Before spawning agents:**
-
-```bash
-# Triage labels (one-time, if not done)
-gh label create needs-triage --color BFD4F2 --description "Maintainer needs to evaluate" 2>/dev/null || true
-gh label create needs-info --color FEF2C0 --description "Waiting on reporter" 2>/dev/null || true
-gh label create ready-for-agent --color C2E0C6 --description "Fully specified, AFK-ready" 2>/dev/null || true
-gh label create ready-for-human --color FBCA04 --description "Requires human implementation" 2>/dev/null || true
-
-# File Phase 1 issues from PRD
-# /to-issues docs/plans/application-buildout-prd.md
-```
-
-**Local hygiene:**
-
-```bash
-git fetch --prune
-git branch -d docs/phase-0-5-auth-wiki feat/phase-0-3-profile-batch feat/phase-0-4-prod-secrets test/phase-0-6-authz 2>/dev/null || true
-```
+Spawn one agent per row after Phase 1 merge.

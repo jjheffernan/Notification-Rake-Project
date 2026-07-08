@@ -1,20 +1,17 @@
 # Split-to-PRs draft
 
-**Status:** Phase 0 complete — all PRs merged to `main` (`32f66d9`).
+**Status:** Phase 1 complete — PRs [#5](https://github.com/jjheffernan/Notification-Rake-Project/pull/5)–[#9](https://github.com/jjheffernan/Notification-Rake-Project/pull/9) open, awaiting merge.
 
-## Merged
+## Phase 1 PRs
 
-| GitHub PR | Sub-agent | PLAN task | Merged |
-|-----------|-----------|-----------|--------|
-| [#1](https://github.com/jjheffernan/Notification-Rake-Project/pull/1) | `config-hardening` | 0.4 | ✅ |
-| [#2](https://github.com/jjheffernan/Notification-Rake-Project/pull/2) | `api-authz` | 0.3 | ✅ |
-| [#3](https://github.com/jjheffernan/Notification-Rake-Project/pull/3) | `docs-security` | 0.5 | ✅ |
-| [#4](https://github.com/jjheffernan/Notification-Rake-Project/pull/4) | `test-authz` | 0.6 | ✅ |
+| PR | Sub-agent | Task |
+|----|-----------|------|
+| [#5](https://github.com/jjheffernan/Notification-Rake-Project/pull/5) | `ops-smoke` | 1.6 smoke script |
+| [#6](https://github.com/jjheffernan/Notification-Rake-Project/pull/6) | `coolify-compose` | 1.1 + 1.2 Coolify compose |
+| [#7](https://github.com/jjheffernan/Notification-Rake-Project/pull/7) | `config-hardening` | 1.5 LOG_LEVEL |
+| [#8](https://github.com/jjheffernan/Notification-Rake-Project/pull/8) | `docs-deploy` | 1.3 wiki env matrix |
+| [#9](https://github.com/jjheffernan/Notification-Rake-Project/pull/9) | `health-endpoint` | 1.4 deep /health |
 
-Foundation (`1fa176e`) landed before Phase 0 PRs.
+## Next
 
-## Next split (Phase 1)
-
-See [`PLAN.md`](../../PLAN.md) **Next actions** — spawn one sub-agent per task 1.1–1.6.
-
-**Deferred:** notebook hygiene.
+Merge #5–#9, then Phase 2 swarms per `PLAN.md`.
