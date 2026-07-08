@@ -23,12 +23,14 @@ from notification_rake.search.market import (
     model_market_detail,
     resolve_model_from_slugs,
 )
+from notification_rake.search.meilisearch_client import check_health as check_meilisearch_health
 from notification_rake.storage.accounts import (
     delete_account,
     list_accounts,
     new_profile_id,
     upsert_account,
 )
+from notification_rake.storage.db import check_connection
 from notification_rake.storage.scheduled_searches import (
     ScheduledSearch,
     delete_scheduled_search,
@@ -110,7 +112,32 @@ def signin_page():
 
 @bp.get("/health")
 def health():
-    return jsonify(status="ok")
+    components: dict[str, dict[str, str]] = {}
+
+    try:
+        db_ok = check_connection(settings.database_url)
+        components["database"] = {"status": "ok" if db_ok else "fail"}
+        if not db_ok:
+            components["database"]["detail"] = "SELECT 1 failed"
+    except Exception as exc:
+        db_ok = False
+        components["database"] = {"status": "fail", "detail": str(exc)}
+
+    if settings.meilisearch_url:
+        meili_ok, meili_detail = check_meilisearch_health()
+        components["meilisearch"] = {
+            "status": "ok" if meili_ok else "fail",
+            "detail": meili_detail,
+        }
+    else:
+        meili_ok = True
+        components["meilisearch"] = {"status": "skip", "detail": "not configured"}
+
+    healthy = db_ok and meili_ok
+    return (
+        jsonify(status="ok" if healthy else "degraded", components=components),
+        200 if healthy else 503,
+    )
 
 
 @bp.get("/m")
