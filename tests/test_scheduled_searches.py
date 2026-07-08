@@ -204,3 +204,91 @@ def test_admin_run_scheduled_searches_action():
         result = execute_action("run_scheduled_searches")
     assert result.ok
     assert "searches=2" in result.message
+
+
+OTHER_PROFILE = "22222222-2222-4222-8222-222222222222"
+
+
+def test_list_scheduled_searches_requires_profile_id():
+    app = create_app()
+    client = app.test_client()
+    resp = client.get("/api/scheduled-searches")
+    assert resp.status_code == 400
+    assert b"profile_id required" in resp.data
+
+
+def test_list_scheduled_searches_scoped_to_profile(profile_id):
+    app = create_app()
+    client = app.test_client()
+    sample = ScheduledSearch(
+        id="44444444-4444-4444-8444-444444444444",
+        profile_id=profile_id,
+        name="Scoped",
+        query_json={"make": "Subaru"},
+        alert_enabled=True,
+        enabled=True,
+        interval_minutes=360,
+        ingest_routes=[],
+        last_run_at=None,
+        next_run_at=None,
+        last_match_count=0,
+        last_new_count=0,
+        last_seen_ids=[],
+        created_at="2026-01-01T00:00:00+00:00",
+    )
+    with patch(
+        "notification_rake.web.blueprints.public.list_scheduled_searches",
+        return_value=[sample],
+    ) as list_searches:
+        resp = client.get(f"/api/scheduled-searches?profile_id={profile_id}")
+    assert resp.status_code == 200
+    assert list_searches.call_args.kwargs["profile_id"] == profile_id
+    assert resp.get_json()["searches"][0]["name"] == "Scoped"
+
+
+def test_delete_scheduled_search_wrong_profile_returns_404(profile_id):
+    app = create_app()
+    client = app.test_client()
+    search_id = "55555555-5555-4555-8555-555555555555"
+    with patch(
+        "notification_rake.web.blueprints.public.delete_scheduled_search",
+        return_value=False,
+    ) as delete_search:
+        resp = client.delete(
+            f"/api/scheduled-searches/{search_id}?profile_id={OTHER_PROFILE}"
+        )
+    assert resp.status_code == 404
+    assert delete_search.call_args[0][1] == search_id
+    assert delete_search.call_args[0][2] == OTHER_PROFILE
+
+
+def test_run_scheduled_search_rejects_other_profile_search(profile_id):
+    app = create_app()
+    client = app.test_client()
+    search_id = "66666666-6666-4666-8666-666666666666"
+    other_search = ScheduledSearch(
+        id=search_id,
+        profile_id=OTHER_PROFILE,
+        name="Not yours",
+        query_json={"make": "Toyota"},
+        alert_enabled=False,
+        enabled=True,
+        interval_minutes=360,
+        ingest_routes=[],
+        last_run_at=None,
+        next_run_at=None,
+        last_match_count=None,
+        last_new_count=None,
+        last_seen_ids=[],
+        created_at="",
+    )
+    with patch(
+        "notification_rake.storage.scheduled_searches.get_scheduled_search",
+        return_value=other_search,
+    ):
+        resp = client.post(
+            "/api/scheduled-searches/run",
+            json={"profile_id": profile_id, "search_id": search_id},
+        )
+    assert resp.status_code == 404
+    assert b"not found" in resp.data.lower()
