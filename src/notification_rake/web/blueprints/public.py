@@ -17,13 +17,13 @@ from notification_rake.search import (
     search_facets,
     search_listings,
 )
-from notification_rake.search.meilisearch_client import check_health as check_meilisearch_health
 from notification_rake.search.market import (
     ModelMarketQuery,
     list_model_markets,
     model_market_detail,
     resolve_model_from_slugs,
 )
+from notification_rake.search.meilisearch_client import check_health as check_meilisearch_health
 from notification_rake.storage.accounts import (
     delete_account,
     list_accounts,
