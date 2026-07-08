@@ -1,4 +1,16 @@
+import pytest
+
 from notification_rake.config import Settings
+
+_PRODUCTION_SECRETS = {
+    "postgres_password": "prod-pg-secret",
+    "hasura_admin_secret": "prod-hasura-secret",
+    "dashboard_secret_key": "prod-dashboard-secret",
+    "admin_password": "prod-admin-secret",
+    "gotify_token": "prod-gotify-token",
+    "meilisearch_api_key": "prod-meili-key",
+    "database_url": "postgresql://rake:prod-pg-secret@db:5432/rake",
+}
 
 
 def test_settings_load_from_env(monkeypatch):
@@ -32,3 +44,14 @@ def test_settings_ignore_unknown_env(monkeypatch):
     monkeypatch.setenv("NOT_A_SETTING", "nope")
     s = Settings()
     assert not hasattr(s, "not_a_setting")
+
+
+def test_production_rejects_placeholder_secrets():
+    with pytest.raises(ValueError, match="RAKE_ENV=production"):
+        Settings(_env_file=None, rake_env="production")
+
+
+def test_production_accepts_real_secrets():
+    s = Settings(_env_file=None, rake_env="production", **_PRODUCTION_SECRETS)
+    assert s.rake_env == "production"
+    assert s.postgres_password == "prod-pg-secret"

@@ -30,6 +30,15 @@ DEFAULT_CRAIGSLIST_RSS = (
     "https://sfbay.craigslist.org/search/cta?format=rss&query=toyota+camry"
 )
 
+# ponytail: fixed set — extend when new placeholder defaults land in Settings
+_PRODUCTION_PLACEHOLDER_VALUES = frozenset(
+    {
+        "change-me",
+        "change-me-dashboard-secret",
+        "change-me-dev-key",
+    }
+)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -120,6 +129,7 @@ class Settings(BaseSettings):
         default=DEFAULT_SCRIPTS_DIR,
         validation_alias="RAKE_SCRIPTS_DIR",
     )
+    rake_env: str = "development"
 
     @model_validator(mode="after")
     def _fill_database_url(self) -> Settings:
@@ -127,6 +137,39 @@ class Settings(BaseSettings):
             self.database_url = (
                 f"postgresql://{self.postgres_user}:{self.postgres_password}"
                 f"@db:5432/{self.postgres_db}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _reject_production_placeholders(self) -> Settings:
+        if self.rake_env.lower() != "production":
+            return self
+
+        problems: list[str] = []
+        for field in (
+            "postgres_password",
+            "hasura_admin_secret",
+            "dashboard_secret_key",
+            "admin_password",
+        ):
+            if getattr(self, field) in _PRODUCTION_PLACEHOLDER_VALUES:
+                problems.append(field)
+
+        if not self.gotify_token.strip():
+            problems.append("gotify_token")
+
+        if self.meilisearch_api_key in _PRODUCTION_PLACEHOLDER_VALUES:
+            problems.append("meilisearch_api_key")
+        elif self.search_engine == "meilisearch" and not self.meilisearch_api_key.strip():
+            problems.append("meilisearch_api_key")
+
+        if "change-me" in self.database_url:
+            problems.append("database_url")
+
+        if problems:
+            raise ValueError(
+                "RAKE_ENV=production: replace placeholder secrets: "
+                + ", ".join(problems)
             )
         return self
 
