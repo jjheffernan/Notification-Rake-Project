@@ -418,13 +418,10 @@ def api_delete_scheduled_search(search_id: str):
 @bp.post("/api/scheduled-searches/run")
 def api_run_scheduled_searches():
     body = request.get_json(silent=True) or {}
-    profile_id = body.get("profile_id")
+    validated_profile = _validate_profile_id(body.get("profile_id"))
     force = bool(body.get("force"))
     search_id = body.get("search_id")
-    validated_profile: str | None = None
-    if profile_id:
-        validated_profile = _validate_profile_id(profile_id)
-    if search_id and validated_profile:
+    if search_id:
         from notification_rake.storage.scheduled_searches import get_scheduled_search
 
         one = get_scheduled_search(settings.database_url, search_id)

@@ -138,6 +138,14 @@ def test_watchlist_page():
     assert b"Watchlist" in resp.data
 
 
+def test_run_scheduled_searches_requires_profile_id():
+    app = create_app()
+    client = app.test_client()
+    resp = client.post("/api/scheduled-searches/run", json={"force": True})
+    assert resp.status_code == 400
+    assert b"profile_id required" in resp.data
+
+
 def test_scheduled_search_api(profile_id):
     app = create_app()
     client = app.test_client()
