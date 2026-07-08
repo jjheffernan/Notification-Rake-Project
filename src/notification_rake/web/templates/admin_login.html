@@ -16,6 +16,7 @@
     <p class="subtitle">Public browsing does not require an account.</p>
     {% if error %}<p class="error">{{ error }}</p>{% endif %}
     <form class="ui-form" method="post" action="/admin/login">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
       <div class="ui-field">
         <label>Username<input class="ui-input" name="username" required autocomplete="username" /></label>
       </div>
