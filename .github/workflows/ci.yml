@@ -28,6 +28,21 @@ jobs:
       - run: ruff check src tests
       - run: pytest -q --tb=short
 
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      # ponytail: upgrade pip before audit — setup-python ships an older pip with known CVEs
+      - run: pip install --upgrade pip
+      - run: pip install ".[dev]" pip-audit
+      - run: pip-audit
+        # ponytail: allow failure until baseline is clean; remove continue-on-error once green
+        continue-on-error: true
+
   docker:
     runs-on: ubuntu-latest
     needs: python
