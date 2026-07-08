@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     admin_user: str = "admin"
     admin_password: str = "change-me"
     admin_nav_visible: bool = False
+    api_rate_limit: int = 120
+    api_rate_limit_window_sec: int = 60
+    admin_login_rate_limit: int = 10
+    admin_login_rate_limit_window_sec: int = 60
 
     adminer_url: str = "http://127.0.0.1:8082"
     metabase_url: str = "http://127.0.0.1:3000"
