@@ -11,6 +11,7 @@ from notification_rake.config import configure_logging, settings
 from notification_rake.storage.metadata import record_api_usage
 from notification_rake.web.blueprints.admin import bp as admin_bp
 from notification_rake.web.blueprints.public import bp as public_bp
+from notification_rake.web.rate_limit import register_rate_limit
 
 _WEB_ROOT = Path(__file__).resolve().parent
 
@@ -28,6 +29,7 @@ def create_app() -> Flask:
 
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)
+    register_rate_limit(app)
 
     @app.context_processor
     def inject_nav_context():
