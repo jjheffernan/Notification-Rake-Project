@@ -6,6 +6,10 @@
     <a href="/m"{% if nav_active == "market" %} class="active"{% endif %}>Market data</a>
     <a href="/watchlist"{% if nav_active == "watchlist" %} class="active"{% endif %}>Watchlist</a>
     <a href="/accounts"{% if nav_active == "accounts" %} class="active"{% endif %}>Accounts</a>
-    <a href="/admin/login" class="admin-link">Admin</a>
+    <a href="/signin" class="nav-signin{% if nav_active == 'signin' %} active{% endif %}" data-nav-signin>Sign in</a>
+    <a href="/accounts" class="nav-signed-in hidden" data-nav-signed-in>My profile</a>
+    {% if admin_nav_visible %}
+    <a href="/admin/login" class="admin-link nav-operator">Operator</a>
+    {% endif %}
   </nav>
 </header>

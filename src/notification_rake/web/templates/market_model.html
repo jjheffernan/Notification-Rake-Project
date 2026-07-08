@@ -4,6 +4,7 @@
 {% endblock %}
 {% block head_extra %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" crossorigin="anonymous"></script>
 {% endblock %}
 {% block body %}
   <main class="ui-main market-page">
@@ -28,19 +29,107 @@
       </div>
     </section>
 
-    <section class="ui-grid ui-grid--stats stat-cards" id="stat-cards"></section>
+    <section class="classic-market" id="classic-market" aria-label="Sales analytics">
+      <header class="classic-market__filters">
+        <div class="classic-market__filters-label">
+          <span class="classic-market__filters-icon" aria-hidden="true">⫶</span>
+          <span>Filters</span>
+          <span class="classic-market__filter-count" id="filter-count">0</span>
+        </div>
+        <div class="classic-market__pills" id="filter-pills">
+          <button type="button" class="classic-pill is-active" data-filter="period" data-value="12">1 Year</button>
+          <button type="button" class="classic-pill" data-filter="period" data-value="36">3 Years</button>
+          <button type="button" class="classic-pill" data-filter="period" data-value="all">All time</button>
+          <button type="button" class="classic-pill" data-filter="panel" data-panel="price">Price</button>
+          <button type="button" class="classic-pill" data-filter="panel" data-panel="location">Location</button>
+          <button type="button" class="classic-pill" data-filter="panel" data-panel="odometer">Odometer</button>
+          <button type="button" class="classic-pill" data-filter="panel" data-panel="status">Status</button>
+        </div>
+      </header>
 
-    <div class="market-charts ui-grid ui-grid--2">
-      <article class="ui-panel chart-panel">
-        <h2 class="ui-panel__title">Inventory volume by model year</h2>
-        <p class="hint">Indexed listings in our database</p>
-        <canvas id="volume-year-chart" height="120"></canvas>
-      </article>
-      <article class="ui-panel chart-panel">
-        <h2 class="ui-panel__title">New listings over time</h2>
-        <p class="hint">Monthly adds to the index</p>
-        <canvas id="volume-month-chart" height="120"></canvas>
-      </article>
+      <div class="classic-market__filter-panel hidden" id="filter-panel-price">
+        <label>Min price <input type="number" id="filter-min-price" placeholder="Any" min="0" step="500" /></label>
+        <label>Max price <input type="number" id="filter-max-price" placeholder="Any" min="0" step="500" /></label>
+        <button type="button" class="classic-pill classic-pill--apply" data-apply-filters>Apply</button>
+      </div>
+      <div class="classic-market__filter-panel hidden" id="filter-panel-location">
+        <label>Region
+          <select id="filter-country">
+            <option value="">All regions</option>
+          </select>
+        </label>
+        <button type="button" class="classic-pill classic-pill--apply" data-apply-filters>Apply</button>
+      </div>
+      <div class="classic-market__filter-panel hidden" id="filter-panel-odometer">
+        <label>Max odometer <input type="number" id="filter-max-mileage" placeholder="Any" min="0" step="1000" /></label>
+        <button type="button" class="classic-pill classic-pill--apply" data-apply-filters>Apply</button>
+      </div>
+      <div class="classic-market__filter-panel hidden" id="filter-panel-status">
+        <label>Status
+          <select id="filter-status">
+            <option value="">All statuses</option>
+            <option value="sold">Sold</option>
+            <option value="high_bid">High bid</option>
+            <option value="for_sale">For sale</option>
+            <option value="last_asking">Last asking price</option>
+          </select>
+        </label>
+        <button type="button" class="classic-pill classic-pill--apply" data-apply-filters>Apply</button>
+      </div>
+
+      <div class="classic-market__kpis" id="sales-kpis">
+        <div class="classic-kpi"><span class="classic-kpi__label">Avg</span><span class="classic-kpi__value" id="kpi-avg">—</span></div>
+        <div class="classic-kpi"><span class="classic-kpi__label">Sales Count</span><span class="classic-kpi__value" id="kpi-count">—</span></div>
+        <div class="classic-kpi"><span class="classic-kpi__label">Dollar Volume</span><span class="classic-kpi__value" id="kpi-volume">—</span></div>
+        <div class="classic-kpi"><span class="classic-kpi__label">Lowest Sale</span><span class="classic-kpi__value" id="kpi-low">—</span></div>
+        <div class="classic-kpi"><span class="classic-kpi__label">Top Sale</span><span class="classic-kpi__value" id="kpi-high">—</span></div>
+        <div class="classic-kpi"><span class="classic-kpi__label">Most Recent</span><span class="classic-kpi__value" id="kpi-recent">—</span></div>
+      </div>
+
+      <nav class="classic-market__tabs" id="market-tabs" role="tablist">
+        <button type="button" class="classic-tab is-active" role="tab" data-tab="sales" aria-selected="true">Sales</button>
+        <button type="button" class="classic-tab" role="tab" data-tab="mileage">Mileage</button>
+        <button type="button" class="classic-tab" role="tab" data-tab="years">Years</button>
+        <button type="button" class="classic-tab" role="tab" data-tab="submarkets">Submarkets</button>
+        <button type="button" class="classic-tab" role="tab" data-tab="volume">Volume</button>
+        <button type="button" class="classic-tab" role="tab" data-tab="locations">Locations</button>
+      </nav>
+
+      <div class="classic-market__chart-wrap" id="tab-sales" role="tabpanel">
+        <canvas id="sales-scatter-chart" height="320"></canvas>
+        <div class="classic-market__legend">
+          <span class="classic-legend__title">Status</span>
+          <span class="classic-legend__item"><i class="dot dot-sold"></i> Sold</span>
+          <span class="classic-legend__item"><i class="dot dot-high-bid"></i> High Bid</span>
+          <span class="classic-legend__item"><i class="dot dot-for-sale"></i> For Sale</span>
+          <span class="classic-legend__item"><i class="dot dot-last-asking"></i> Last Asking Price</span>
+          <span class="classic-legend__item"><i class="line line-avg"></i> Average Sale (Moving Average)</span>
+        </div>
+      </div>
+
+      <div class="classic-market__chart-wrap hidden" id="tab-mileage" role="tabpanel" hidden>
+        <canvas id="mileage-scatter-chart" height="280"></canvas>
+      </div>
+      <div class="classic-market__chart-wrap hidden" id="tab-years" role="tabpanel" hidden>
+        <canvas id="year-chart-classic" height="280"></canvas>
+      </div>
+      <div class="classic-market__chart-wrap hidden" id="tab-submarkets" role="tabpanel" hidden>
+        <div id="by-source-classic" class="ui-table-wrap"></div>
+      </div>
+      <div class="classic-market__chart-wrap hidden" id="tab-volume" role="tabpanel" hidden>
+        <div class="classic-volume-grid">
+          <canvas id="volume-year-chart" height="120"></canvas>
+          <canvas id="volume-month-chart" height="120"></canvas>
+        </div>
+      </div>
+      <div class="classic-market__chart-wrap hidden" id="tab-locations" role="tabpanel" hidden>
+        <div id="by-country-classic" class="ui-table-wrap"></div>
+      </div>
+    </section>
+
+    <section class="ui-grid ui-grid--stats stat-cards hidden" id="stat-cards" aria-hidden="true"></section>
+
+    <div class="market-charts ui-grid ui-grid--2 hidden" id="legacy-charts" aria-hidden="true">
       <article class="ui-panel chart-panel">
         <h2 class="ui-panel__title">Price by model year</h2>
         <canvas id="year-chart" height="120"></canvas>
@@ -60,17 +149,6 @@
       <div id="external-volume" class="external-volume-grid ui-grid ui-grid--2"></div>
       <div id="external-sources" class="hint"></div>
     </article>
-
-    <div class="ui-grid ui-grid--2 market-split">
-      <article class="ui-panel data-panel">
-        <h2 class="ui-panel__title">By source</h2>
-        <div id="by-source" class="ui-table-wrap"></div>
-      </article>
-      <article class="ui-panel data-panel">
-        <h2 class="ui-panel__title">By region</h2>
-        <div id="by-country" class="ui-table-wrap"></div>
-      </article>
-    </div>
 
     <article class="ui-panel comps-panel">
       <div class="ui-panel__head panel-head">

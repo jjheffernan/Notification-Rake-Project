@@ -99,6 +99,15 @@ def watchlist_page():
     )
 
 
+@bp.get("/signin")
+def signin_page():
+    return render_template(
+        "signin.html",
+        title="Sign in — Notification Rake",
+        nav_active="signin",
+    )
+
+
 @bp.get("/health")
 def health():
     return jsonify(status="ok")
@@ -136,20 +145,32 @@ def api_market_models():
     return _cached_json({"models": models, "total": len(models)}, max_age=120)
 
 
-@bp.get("/api/market/model")
-def api_market_model():
-    make = request.args.get("make") or ""
-    model = request.args.get("model") or ""
-    if not make or not model:
-        abort(400, description="make and model required")
-    query = ModelMarketQuery(
+def _market_query_from_request(make: str, model: str) -> ModelMarketQuery:
+    period = request.args.get("period_months", type=int)
+    if period is None and request.args.get("period") == "all":
+        period = None
+    return ModelMarketQuery(
         make=make,
         model=model,
         year_min=request.args.get("year_min", type=int),
         year_max=request.args.get("year_max", type=int),
         source=request.args.get("source") or None,
         country=request.args.get("country") or None,
+        period_months=period if period is not None else 12,
+        min_price=request.args.get("min_price", type=float),
+        max_price=request.args.get("max_price", type=float),
+        max_mileage=request.args.get("max_mileage", type=int),
+        sale_status=request.args.get("status") or None,
     )
+
+
+@bp.get("/api/market/model")
+def api_market_model():
+    make = request.args.get("make") or ""
+    model = request.args.get("model") or ""
+    if not make or not model:
+        abort(400, description="make and model required")
+    query = _market_query_from_request(make, model)
     detail = model_market_detail(settings.database_url, query)
     if not detail:
         abort(404, description="no market data for this model")
@@ -161,14 +182,7 @@ def api_market_model_slug(make_slug: str, model_slug: str):
     resolved = resolve_model_from_slugs(settings.database_url, make_slug, model_slug)
     if not resolved:
         abort(404, description="model not found")
-    query = ModelMarketQuery(
-        make=resolved.make,
-        model=resolved.model,
-        year_min=request.args.get("year_min", type=int),
-        year_max=request.args.get("year_max", type=int),
-        source=request.args.get("source") or None,
-        country=request.args.get("country") or None,
-    )
+    query = _market_query_from_request(resolved.make, resolved.model)
     detail = model_market_detail(settings.database_url, query)
     if not detail:
         abort(404, description="no market data for this model")

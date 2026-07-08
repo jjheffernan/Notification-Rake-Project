@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     dashboard_port: int = 8000
     admin_user: str = "admin"
     admin_password: str = "change-me"
+    admin_nav_visible: bool = False
 
     adminer_url: str = "http://127.0.0.1:8082"
     metabase_url: str = "http://127.0.0.1:3000"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Deployment plan (PLAN.md)
+    url: https://github.com/jjheffernan/Notification-Rake-Project/blob/main/PLAN.md
+    about: Phase roadmap, scores, and sub-agent task IDs
+  - name: Agent skills setup
+    url: https://github.com/jjheffernan/Notification-Rake-Project/blob/main/docs/agents/issue-tracker.md
+    about: Issue tracker and triage label conventions

@@ -1,0 +1,70 @@
+name: Vertical slice (agent-ready)
+description: Independently shippable tracer bullet — use for PRD / PLAN tasks
+title: "[slice] "
+labels:
+  - ready-for-agent
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the [to-issues](https://github.com/mattpocock/skills) body format.
+        See `docs/plans/application-buildout-prd.md` for phase tasks.
+
+  - type: input
+    id: parent
+    attributes:
+      label: Parent issue
+      description: "Optional — e.g. #12 or omit"
+    validations:
+      required: false
+
+  - type: input
+    id: plan_task
+    attributes:
+      label: PLAN.md task ID
+      description: "e.g. 0.3, 1.1"
+    validations:
+      required: false
+
+  - type: input
+    id: sub_agent
+    attributes:
+      label: Sub-agent ID
+      description: "e.g. api-authz, coolify-compose"
+    validations:
+      required: false
+
+  - type: textarea
+    id: what_to_build
+    attributes:
+      label: What to build
+      description: End-to-end behavior — not layer-by-layer implementation
+      value: |
+        ## What to build
+
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        ## Acceptance criteria
+
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocked_by
+    attributes:
+      label: Blocked by
+      value: |
+        ## Blocked by
+
+        None — can start immediately
+    validations:
+      required: true

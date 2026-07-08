@@ -1,0 +1,41 @@
+{% extends "partials/base.html" %}
+{% block title %}Sign in — Notification Rake{% endblock %}
+{% block body %}
+  <main class="ui-main ui-main--narrow">
+    <section class="ui-panel auth-card buyer-signin">
+      <p class="ui-eyebrow">Buyer account</p>
+      <h1 class="ui-page-title">Sign in</h1>
+      <p class="subtitle">
+        Save watchlists and connected marketplace accounts on this device.
+        No password — your profile ID is your recovery key.
+      </p>
+
+      <div id="signin-status" class="signin-status hidden" aria-live="polite"></div>
+
+      <form class="ui-form" id="signin-restore-form">
+        <label>
+          Restore with profile ID
+          <input type="text" name="profile_id" id="profile-id-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
+        </label>
+        <button type="submit" class="ui-btn ui-btn--primary">Restore profile</button>
+      </form>
+
+      <div class="signin-divider"><span>or</span></div>
+
+      <button type="button" class="ui-btn ui-btn--secondary" id="signin-create-btn">Create new profile</button>
+
+      <p class="hint signin-hint">
+        Store your profile ID somewhere safe — it is the only way to recover
+        watchlists and connected accounts on a new browser.
+      </p>
+
+      <p class="hint">
+        <a href="/accounts">Connected accounts</a> ·
+        <a href="/watchlist">Watchlist</a>
+      </p>
+    </section>
+  </main>
+{% endblock %}
+{% block scripts %}
+  <script src="/static/signin.js"></script>
+{% endblock %}

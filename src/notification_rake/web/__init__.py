@@ -28,6 +28,10 @@ def create_app() -> Flask:
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)
 
+    @app.context_processor
+    def inject_nav_context():
+        return {"admin_nav_visible": settings.admin_nav_visible}
+
     @app.after_request
     def track_api_usage(response):
         if request.path.startswith("/api/"):

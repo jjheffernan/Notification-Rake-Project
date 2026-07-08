@@ -25,6 +25,7 @@ echo "==> vendor repos"
 mkdir -p "$VENDOR"
 clone_or_update "https://github.com/JuliusBrussee/caveman" "$VENDOR/caveman"
 clone_or_update "https://github.com/DietrichGebert/ponytail" "$VENDOR/ponytail"
+clone_or_update "https://github.com/mattpocock/skills" "$VENDOR/mattpocock-skills"
 
 echo "==> canonical skills in .agent/skills/ (relative symlinks)"
 mkdir -p "$AGENT/skills"
@@ -38,6 +39,15 @@ link_skill() {
 for d in "$VENDOR/caveman/skills"/*/ "$VENDOR/ponytail/skills"/*/; do
   [[ -d "$d" ]] || continue
   link_skill "$(basename "$d")" "$d"
+done
+
+# mattpocock/skills — engineering + productivity (includes grill-me / grilling)
+for bucket in engineering productivity; do
+  for d in "$VENDOR/mattpocock-skills/skills/$bucket"/*/; do
+    [[ -d "$d" ]] || continue
+    [[ -f "$d/SKILL.md" ]] || continue
+    link_skill "$(basename "$d")" "$d"
+  done
 done
 
 echo "==> canonical rules in .agent/rules/"
@@ -110,6 +120,8 @@ Vehicle listing platform. Read `specs.md` + `docs/functions.md` before editing P
 
 - `/caveman` — terse replies
 - `/ponytail` — minimal code
+- `/grill-me` — relentless plan/design interview ([mattpocock/skills](https://github.com/mattpocock/skills))
+- `/grill-with-docs`, `/tdd`, `/to-prd`, `/to-issues`, `/triage`, … — same vendor set
 - Sub-skills in `.agent/skills/` — run `make install-skills` after clone
 
 Full ponytail/caveman rules live in `.agent/rules/` and `.cursor/rules/` — not duplicated here.

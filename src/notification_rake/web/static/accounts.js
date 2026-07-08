@@ -9,8 +9,9 @@ const syncAccountsBtn = document.getElementById("sync-accounts-btn");
 
 async function loadAccounts() {
   if (!accountsList) return;
+  const profileId = profile.requireProfileId();
+  if (!profileId) return;
   try {
-    const profileId = await profile.ensureProfileId();
     const resp = await fetch(`/api/accounts?profile_id=${encodeURIComponent(profileId)}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
@@ -37,7 +38,7 @@ async function loadAccounts() {
 accountForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   try {
-    const profileId = await profile.ensureProfileId();
+    const profileId = profile.getProfileId();
     const provider = document.getElementById("account-provider").value;
     const label = document.getElementById("account-label").value || provider;
     let config = {};
@@ -70,7 +71,7 @@ accountForm?.addEventListener("submit", async (e) => {
 
 syncAccountsBtn?.addEventListener("click", async () => {
   try {
-    const profileId = await profile.ensureProfileId();
+    const profileId = profile.getProfileId();
     ui.setStatus(statusEl, "Syncing connected accounts…");
     syncAccountsBtn.disabled = true;
     const resp = await fetch("/api/accounts/sync", {
@@ -92,4 +93,6 @@ syncAccountsBtn?.addEventListener("click", async () => {
   }
 });
 
-loadAccounts();
+if (profile.requireProfileId()) {
+  loadAccounts();
+}

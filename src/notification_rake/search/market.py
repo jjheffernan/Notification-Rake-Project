@@ -27,6 +27,91 @@ class ModelMarketQuery:
     year_max: int | None = None
     source: str | None = None
     country: str | None = None
+    period_months: int | None = 12
+    min_price: float | None = None
+    max_price: float | None = None
+    max_mileage: int | None = None
+    sale_status: str | None = None
+
+
+def classify_sale_status(
+    auction_status: str | None,
+    *,
+    price_events: int = 0,
+) -> str:
+    """Map listing/auction state to classic.com-style chart categories."""
+    status = (auction_status or "").lower()
+    if status in {"sold", "ended"}:
+        return "sold"
+    if status in {"live", "active", "upcoming", "on_approval"}:
+        return "high_bid"
+    if price_events > 1:
+        return "last_asking"
+    return "for_sale"
+
+
+def compute_moving_average(
+    points: list[dict[str, Any]],
+    *,
+    status: str = "sold",
+    window_months: int = 3,
+) -> list[dict[str, Any]]:
+    """Monthly rolling average price for scatter chart trend line."""
+    from collections import defaultdict
+    from datetime import datetime
+
+    filtered = [p for p in points if p.get("status") == status and p.get("price") is not None]
+    if not filtered:
+        filtered = [p for p in points if p.get("price") is not None]
+    if not filtered:
+        return []
+
+    monthly: dict[str, list[float]] = defaultdict(list)
+    for point in filtered:
+        raw = point.get("date") or ""
+        month_key = raw[:7] if len(raw) >= 7 else raw
+        if month_key:
+            monthly[month_key].append(float(point["price"]))
+
+    months = sorted(monthly)
+    monthly_avg = [(m, sum(monthly[m]) / len(monthly[m])) for m in months]
+    if not monthly_avg:
+        return []
+
+    result: list[dict[str, Any]] = []
+    for idx, (month, _) in enumerate(monthly_avg):
+        start = max(0, idx - window_months + 1)
+        window = monthly_avg[start : idx + 1]
+        avg = sum(v for _, v in window) / len(window)
+        dt = datetime.strptime(f"{month}-01", "%Y-%m-%d")
+        result.append({"date": dt.date().isoformat(), "avg_price": round(avg, 2)})
+    return result
+
+
+def _sales_kpis(points: list[dict[str, Any]]) -> dict[str, Any]:
+    sold = [p for p in points if p.get("status") == "sold" and p.get("price") is not None]
+    basis = sold or [p for p in points if p.get("price") is not None]
+    if not basis:
+        return {
+            "avg_price": None,
+            "sales_count": 0,
+            "dollar_volume": None,
+            "lowest_sale": None,
+            "top_sale": None,
+            "most_recent": None,
+            "most_recent_date": None,
+        }
+    prices = [float(p["price"]) for p in basis]
+    most_recent_pt = max(basis, key=lambda p: p.get("date") or "")
+    return {
+        "avg_price": round(sum(prices) / len(prices), 2),
+        "sales_count": len(basis),
+        "dollar_volume": round(sum(prices), 2),
+        "lowest_sale": min(prices),
+        "top_sale": max(prices),
+        "most_recent": float(most_recent_pt["price"]),
+        "most_recent_date": most_recent_pt.get("date"),
+    }
 
 
 def _model_where(query: ModelMarketQuery) -> tuple[str, dict[str, Any]]:
@@ -55,7 +140,82 @@ def _model_where(query: ModelMarketQuery) -> tuple[str, dict[str, Any]]:
     if query.country:
         params["country"] = query.country.strip().upper()
         where.append("vl.country = %(country)s")
+    if query.min_price is not None:
+        params["min_price"] = query.min_price
+        where.append("vl.price >= %(min_price)s")
+    if query.max_price is not None:
+        params["max_price"] = query.max_price
+        where.append("vl.price <= %(max_price)s")
+    if query.max_mileage is not None:
+        params["max_mileage"] = query.max_mileage
+        where.append("vl.mileage <= %(max_mileage)s")
     return " AND ".join(where), params
+
+
+def _fetch_sales_points(
+    conn: Any,
+    where_sql: str,
+    params: dict[str, Any],
+    *,
+    period_months: int | None,
+) -> list[dict[str, Any]]:
+    period_clause = ""
+    query_params = dict(params)
+    if period_months is not None:
+        period_clause = (
+            " AND COALESCE(al.ends_at, rl.updated_at, vl.updated_at, vl.created_at) "
+            ">= NOW() - make_interval(months => %(period_months)s)"
+        )
+        query_params["period_months"] = period_months
+
+    sql = f"""
+        SELECT
+            vl.id,
+            vl.title,
+            vl.price,
+            vl.year,
+            vl.mileage,
+            vl.source,
+            vl.country,
+            COALESCE(al.ends_at, rl.updated_at, vl.updated_at, vl.created_at) AS event_at,
+            al.auction_status,
+            COALESCE(hist.price_events, 0) AS price_events
+        FROM vehicle_listing vl
+        LEFT JOIN vehicle_make mk ON mk.id = vl.make_id
+        LEFT JOIN vehicle_model mo ON mo.id = vl.model_id
+        LEFT JOIN listings.source src ON src.name = vl.source
+        LEFT JOIN listings.listing rl
+            ON rl.source_id = src.id AND rl.external_id = vl.source_listing_id
+        LEFT JOIN listings.auction_lot al ON al.listing_id = rl.id
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*)::int AS price_events
+            FROM listings.listing_history lh
+            WHERE lh.listing_id = rl.id
+        ) hist ON TRUE
+        WHERE {where_sql}
+          AND vl.price IS NOT NULL
+          {period_clause}
+        ORDER BY event_at ASC;
+    """
+    rows = conn.execute(sql, query_params).fetchall()
+    points: list[dict[str, Any]] = []
+    for row in rows:
+        status = classify_sale_status(row[8], price_events=int(row[9] or 0))
+        event_at = row[7]
+        points.append(
+            {
+                "id": str(row[0]),
+                "title": row[1],
+                "price": float(row[2]) if row[2] is not None else None,
+                "year": row[3],
+                "mileage": row[4],
+                "source": row[5],
+                "country": row[6],
+                "date": event_at.date().isoformat() if event_at else None,
+                "status": status,
+            }
+        )
+    return points
 
 
 def list_model_markets(dsn: str, *, limit: int = 100) -> list[dict[str, Any]]:
@@ -234,6 +394,15 @@ def model_market_detail(dsn: str, query: ModelMarketQuery) -> dict[str, Any] | N
         trend = conn.execute(trend_sql, params).fetchall()
         new_listings = conn.execute(new_listings_sql, params).fetchall()
         activity = conn.execute(activity_sql, params).fetchall()
+        sales_points = _fetch_sales_points(
+            conn, where_sql, params, period_months=query.period_months
+        )
+
+    if query.sale_status:
+        sales_points = [p for p in sales_points if p["status"] == query.sale_status]
+
+    moving_average = compute_moving_average(sales_points)
+    sales_kpis = _sales_kpis(sales_points)
 
     make_name = query.make.strip()
     model_name = query.model.strip()
@@ -341,6 +510,16 @@ def model_market_detail(dsn: str, query: ModelMarketQuery) -> dict[str, Any] | N
             "external": _fetch_external_volume(make_name, model_name),
         },
         "comps": comp_rows,
+        "sales_analytics": {
+            "kpis": sales_kpis,
+            "points": sales_points,
+            "moving_average": moving_average,
+            "filters": {
+                "period_months": query.period_months,
+                "countries": sorted({p["country"] for p in sales_points if p.get("country")}),
+                "sources": sorted({p["source"] for p in sales_points if p.get("source")}),
+            },
+        },
     }
 
 

@@ -11,7 +11,10 @@ async function fetchMarketIndex() {
 }
 
 async function fetchModelMarket(make, model, params = {}) {
-  const qs = new URLSearchParams(params);
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
+  });
   const resp = await fetch(
     `/api/market/model?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&${qs}`
   );
@@ -19,6 +22,25 @@ async function fetchModelMarket(make, model, params = {}) {
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.json();
 }
+
+const SALE_STATUS_META = {
+  sold: { label: "Sold", color: "#22c55e" },
+  high_bid: { label: "High Bid", color: "#ef4444" },
+  for_sale: { label: "For Sale", color: "#111827" },
+  last_asking: { label: "Last Asking", color: "#9ca3af" },
+};
+
+let salesChart = null;
+let mileageChart = null;
+let yearClassicChart = null;
+let marketFilterState = {
+  period_months: 12,
+  min_price: "",
+  max_price: "",
+  max_mileage: "",
+  country: "",
+  status: "",
+};
 
 function renderIndexCard(item) {
   const article = document.createElement("article");
@@ -92,60 +114,324 @@ function initModelPage() {
   const searchLink = document.getElementById("search-link");
   searchLink.href = `/?make=${encodeURIComponent(cfg.make)}&model=${encodeURIComponent(cfg.model)}`;
 
-  fetchModelMarket(cfg.make, cfg.model)
-    .then((data) => {
-      if (!data) {
-        document.getElementById("model-subtitle").textContent = "No listings found for this model.";
-        return;
-      }
-      const s = data.summary;
-      document.getElementById("model-subtitle").textContent =
-        `${s.listings} listings · ${s.year_min || "?"}–${s.year_max || "?"} · ` +
-        `${data.by_source.length} sources`;
+  initClassicFilters(cfg);
+  loadModelMarket(cfg);
+}
 
-      document.getElementById("stat-cards").innerHTML = [
-        statCard("Median price", formatPrice(s.median_price), "50th percentile"),
-        statCard("Average", formatPrice(s.avg_price)),
-        statCard("Range", `${formatPrice(s.min_price)} – ${formatPrice(s.max_price)}`),
-        statCard("Inventory", formatNum(s.listings), `${s.priced} with price`),
-        statCard("Avg mileage", s.avg_mileage ? `${formatNum(s.avg_mileage)} mi` : "—"),
-      ].join("");
+function buildMarketParams() {
+  const params = {};
+  if (marketFilterState.period_months === "all") {
+    params.period = "all";
+  } else if (marketFilterState.period_months) {
+    params.period_months = marketFilterState.period_months;
+  }
+  if (marketFilterState.min_price) params.min_price = marketFilterState.min_price;
+  if (marketFilterState.max_price) params.max_price = marketFilterState.max_price;
+  if (marketFilterState.max_mileage) params.max_mileage = marketFilterState.max_mileage;
+  if (marketFilterState.country) params.country = marketFilterState.country;
+  if (marketFilterState.status) params.status = marketFilterState.status;
+  return params;
+}
 
-      const vol = data.sales_volume || {};
-      renderVolumeCharts(vol.internal || {});
-      renderExternalVolume(vol.external || {}, cfg);
+function countActiveFilters() {
+  let n = 0;
+  if (marketFilterState.period_months && marketFilterState.period_months !== 12) n += 1;
+  if (marketFilterState.min_price || marketFilterState.max_price) n += 1;
+  if (marketFilterState.max_mileage) n += 1;
+  if (marketFilterState.country) n += 1;
+  if (marketFilterState.status) n += 1;
+  return n;
+}
 
-      document.getElementById("by-source").innerHTML = renderTable(
-        ["Source", "Listings", "Avg price"],
-        data.by_source.map((r) => [r.source, r.listings, formatPrice(r.avg_price)])
-      );
+function updateFilterCount() {
+  const el = document.getElementById("filter-count");
+  if (!el) return;
+  const n = countActiveFilters();
+  el.textContent = n > 0 ? String(n) : "";
+  el.dataset.zero = n === 0 ? "true" : "false";
+}
 
-      document.getElementById("by-country").innerHTML = renderTable(
-        ["Region", "Listings", "Avg price"],
-        data.by_country.map((r) => [r.country || "?", r.listings, formatPrice(r.avg_price)])
-      );
+function initClassicFilters(cfg) {
+  const pills = document.getElementById("filter-pills");
+  const countrySelect = document.getElementById("filter-country");
 
-      document.getElementById("comps-table").innerHTML = renderTable(
-        ["Title", "Year", "Price", "Source", "Region", "Δ"],
-        data.comps.map((c) => [
-          `<a href="/" onclick="event.preventDefault();">${c.title || "Untitled"}</a>`,
-          c.year || "—",
-          formatPrice(c.price),
-          c.source,
-          c.country || "—",
-          c.price_delta != null && c.price_delta < 0
-            ? `<span class="price-drop">↓ ${formatPrice(Math.abs(c.price_delta))}</span>`
-            : "—",
-        ])
-      );
+  pills?.addEventListener("click", (event) => {
+    const btn = event.target.closest(".classic-pill");
+    if (!btn) return;
 
-      renderYearChart(data.by_year);
-      renderTrendChart(data.price_trend);
-    })
+    if (btn.dataset.filter === "period") {
+      pills.querySelectorAll('[data-filter="period"]').forEach((p) => p.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      marketFilterState.period_months =
+        btn.dataset.value === "all" ? "all" : Number(btn.dataset.value);
+      updateFilterCount();
+      loadModelMarket(cfg);
+      return;
+    }
+
+    if (btn.dataset.filter === "panel") {
+      const panelId = `filter-panel-${btn.dataset.panel}`;
+      document.querySelectorAll(".classic-market__filter-panel").forEach((panel) => {
+        const isTarget = panel.id === panelId;
+        panel.classList.toggle("hidden", !isTarget);
+        panel.toggleAttribute("hidden", !isTarget);
+      });
+    }
+  });
+
+  document.querySelectorAll("[data-apply-filters]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      marketFilterState.min_price = document.getElementById("filter-min-price")?.value || "";
+      marketFilterState.max_price = document.getElementById("filter-max-price")?.value || "";
+      marketFilterState.max_mileage = document.getElementById("filter-max-mileage")?.value || "";
+      marketFilterState.country = countrySelect?.value || "";
+      marketFilterState.status = document.getElementById("filter-status")?.value || "";
+      updateFilterCount();
+      loadModelMarket(cfg);
+    });
+  });
+
+  document.getElementById("market-tabs")?.addEventListener("click", (event) => {
+    const tab = event.target.closest(".classic-tab");
+    if (!tab) return;
+    const name = tab.dataset.tab;
+    document.querySelectorAll(".classic-tab").forEach((t) => {
+      const active = t === tab;
+      t.classList.toggle("is-active", active);
+      t.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    document.querySelectorAll("[role='tabpanel']").forEach((panel) => {
+      const show = panel.id === `tab-${name}`;
+      panel.classList.toggle("hidden", !show);
+      panel.toggleAttribute("hidden", !show);
+    });
+  });
+}
+
+function loadModelMarket(cfg) {
+  fetchModelMarket(cfg.make, cfg.model, buildMarketParams())
+    .then((data) => renderModelMarket(cfg, data))
     .catch((err) => {
       document.getElementById("model-subtitle").textContent = `Error: ${err.message}`;
     });
 }
+
+function renderModelMarket(cfg, data) {
+  if (!data) {
+    document.getElementById("model-subtitle").textContent = "No listings found for this model.";
+    return;
+  }
+  const s = data.summary;
+  document.getElementById("model-subtitle").textContent =
+    `${s.listings} listings · ${s.year_min || "?"}–${s.year_max || "?"} · ` +
+    `${data.by_source.length} sources`;
+
+  const analytics = data.sales_analytics || {};
+  renderSalesKpis(analytics.kpis || {});
+  populateCountryFilter(analytics.filters?.countries || []);
+  renderSalesScatterChart(analytics.points || [], analytics.moving_average || []);
+  renderMileageChart(analytics.points || []);
+  renderYearClassicChart(data.by_year || []);
+
+  document.getElementById("by-source-classic").innerHTML = renderTable(
+    ["Source", "Listings", "Avg price"],
+    data.by_source.map((r) => [r.source, r.listings, formatPrice(r.avg_price)])
+  );
+  document.getElementById("by-country-classic").innerHTML = renderTable(
+    ["Region", "Listings", "Avg price"],
+    data.by_country.map((r) => [r.country || "?", r.listings, formatPrice(r.avg_price)])
+  );
+
+  const vol = data.sales_volume || {};
+  renderVolumeCharts(vol.internal || {});
+  renderExternalVolume(vol.external || {}, cfg);
+
+  document.getElementById("comps-table").innerHTML = renderTable(
+    ["Title", "Year", "Price", "Source", "Region", "Δ"],
+    data.comps.map((c) => [
+      `<span title="${c.title || ""}">${c.title || "Untitled"}</span>`,
+      c.year || "—",
+      formatPrice(c.price),
+      c.source,
+      c.country || "—",
+      c.price_delta != null && c.price_delta < 0
+        ? `<span class="price-drop">↓ ${formatPrice(Math.abs(c.price_delta))}</span>`
+        : "—",
+    ])
+  );
+}
+
+function renderSalesKpis(kpis) {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+  set("kpi-avg", formatPrice(kpis.avg_price));
+  set("kpi-count", formatNum(kpis.sales_count ?? 0));
+  set("kpi-volume", formatPrice(kpis.dollar_volume));
+  set("kpi-low", formatPrice(kpis.lowest_sale));
+  set("kpi-high", formatPrice(kpis.top_sale));
+  set("kpi-recent", formatPrice(kpis.most_recent));
+}
+
+function populateCountryFilter(countries) {
+  const select = document.getElementById("filter-country");
+  if (!select) return;
+  const current = marketFilterState.country;
+  select.innerHTML =
+    `<option value="">All regions</option>` +
+    countries.map((c) => `<option value="${c}">${c}</option>`).join("");
+  select.value = current;
+}
+
+function scatterDatasets(points) {
+  return Object.entries(SALE_STATUS_META).map(([status, meta]) => ({
+    type: "scatter",
+    label: meta.label,
+    data: points
+      .filter((p) => p.status === status && p.price != null && p.date)
+      .map((p) => ({ x: p.date, y: p.price, title: p.title, year: p.year })),
+    backgroundColor: meta.color,
+    borderColor: meta.color,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    order: 1,
+  }));
+}
+
+function renderSalesScatterChart(points, movingAverage) {
+  const canvas = document.getElementById("sales-scatter-chart");
+  if (!canvas || typeof Chart === "undefined") return;
+  if (salesChart) salesChart.destroy();
+
+  const datasets = scatterDatasets(points);
+  if (movingAverage.length) {
+    datasets.push({
+      type: "line",
+      label: "Average Sale (Moving Average)",
+      data: movingAverage.map((r) => ({ x: r.date, y: r.avg_price })),
+      borderColor: "#2563eb",
+      backgroundColor: "rgba(37, 99, 235, 0.12)",
+      borderWidth: 3,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      tension: 0.35,
+      fill: false,
+      order: 0,
+    });
+  }
+
+  salesChart = new Chart(canvas, {
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "nearest", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const raw = ctx.raw || {};
+              const price = formatPrice(raw.y);
+              const bits = [price];
+              if (raw.year) bits.push(`Year ${raw.year}`);
+              if (raw.title) bits.push(raw.title);
+              return bits;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          type: "time",
+          time: { unit: "month", displayFormats: { month: "MMM" } },
+          grid: { color: "rgba(148, 163, 184, 0.25)" },
+          ticks: { color: "#6b7280", maxRotation: 0 },
+        },
+        y: {
+          position: "right",
+          grid: { color: "rgba(148, 163, 184, 0.25)" },
+          ticks: {
+            color: "#6b7280",
+            callback: (v) => `$${Math.round(v / 1000)}k`,
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderMileageChart(points) {
+  const canvas = document.getElementById("mileage-scatter-chart");
+  if (!canvas || typeof Chart === "undefined") return;
+  if (mileageChart) mileageChart.destroy();
+
+  const withMileage = points.filter((p) => p.mileage != null && p.price != null);
+  mileageChart = new Chart(canvas, {
+    type: "scatter",
+    data: {
+      datasets: Object.entries(SALE_STATUS_META).map(([status, meta]) => ({
+        label: meta.label,
+        data: withMileage
+          .filter((p) => p.status === status)
+          .map((p) => ({ x: p.mileage, y: p.price })),
+        backgroundColor: meta.color,
+        pointRadius: 5,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom" } },
+      scales: {
+        x: {
+          title: { display: true, text: "Odometer (mi)" },
+          ticks: { callback: (v) => `${Math.round(v / 1000)}k` },
+        },
+        y: {
+          position: "right",
+          ticks: { callback: (v) => `$${Math.round(v / 1000)}k` },
+        },
+      },
+    },
+  });
+}
+
+function renderYearClassicChart(byYear) {
+  const canvas = document.getElementById("year-chart-classic");
+  if (!canvas || !byYear.length || typeof Chart === "undefined") return;
+  if (yearClassicChart) yearClassicChart.destroy();
+  const labels = byYear.map((r) => String(r.year)).reverse();
+  const values = byYear.map((r) => r.avg_price).reverse();
+  yearClassicChart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Avg price",
+          data: values,
+          backgroundColor: "rgba(37, 99, 235, 0.55)",
+          borderColor: "#2563eb",
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          position: "right",
+          ticks: { callback: (v) => `$${Math.round(v / 1000)}k` },
+        },
+      },
+    },
+  });
+}
+
 
 function renderVolumeCharts(internal) {
   const byYear = internal.inventory_by_year || [];

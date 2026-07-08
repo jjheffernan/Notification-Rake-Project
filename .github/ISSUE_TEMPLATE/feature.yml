@@ -1,0 +1,32 @@
+name: Feature request
+description: New capability or enhancement
+title: "[feat] "
+labels:
+  - enhancement
+  - needs-triage
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What user or operator need does this address?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: End-to-end outcome, not implementation detail
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope hints
+      options:
+        - label: Buyer-facing (public dashboard)
+        - label: Operator-facing (/admin)
+        - label: Ingestion / pipeline
+        - label: Deployment / infra

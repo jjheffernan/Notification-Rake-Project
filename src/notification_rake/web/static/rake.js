@@ -131,14 +131,61 @@
   }
 
   async function ensureProfileId() {
-    let id = localStorage.getItem(PROFILE_KEY);
+    const id = getProfileId();
     if (id) return id;
+    return createProfile();
+  }
+
+  function getProfileId() {
+    return localStorage.getItem(PROFILE_KEY);
+  }
+
+  function isValidProfileId(value) {
+    if (!value) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      String(value).trim()
+    );
+  }
+
+  function setProfileId(id) {
+    const trimmed = String(id || "").trim();
+    if (!isValidProfileId(trimmed)) return false;
+    localStorage.setItem(PROFILE_KEY, trimmed);
+    updateSignedInNav();
+    return true;
+  }
+
+  async function createProfile() {
     const resp = await fetch("/api/profile", { method: "POST" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    id = data.profile_id;
+    const id = data.profile_id;
     localStorage.setItem(PROFILE_KEY, id);
+    updateSignedInNav();
     return id;
+  }
+
+  function clearProfile() {
+    localStorage.removeItem(PROFILE_KEY);
+    updateSignedInNav();
+  }
+
+  function requireProfileId() {
+    const id = getProfileId();
+    if (id) return id;
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/signin?next=${next}`;
+    return null;
+  }
+
+  function updateSignedInNav() {
+    const signedIn = Boolean(getProfileId());
+    document.querySelectorAll("[data-nav-signin]").forEach((el) => {
+      el.classList.toggle("hidden", signedIn);
+    });
+    document.querySelectorAll("[data-nav-signed-in]").forEach((el) => {
+      el.classList.toggle("hidden", !signedIn);
+    });
   }
 
   function initMobileNav() {
@@ -170,13 +217,25 @@
       priceDropBadge,
       setStatus,
     },
-    profile: { ensureProfileId },
+    profile: {
+      ensureProfileId,
+      getProfileId,
+      setProfileId,
+      createProfile,
+      clearProfile,
+      requireProfileId,
+      isValidProfileId,
+    },
     initMobileNav,
   };
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initMobileNav);
+    document.addEventListener("DOMContentLoaded", () => {
+      initMobileNav();
+      updateSignedInNav();
+    });
   } else {
     initMobileNav();
+    updateSignedInNav();
   }
 })(window);

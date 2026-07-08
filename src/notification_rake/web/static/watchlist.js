@@ -42,7 +42,8 @@ async function loadRoutes() {
 }
 
 async function loadWatchlist() {
-  const profileId = await profile.ensureProfileId();
+  const profileId = profile.getProfileId();
+  if (!profileId) return;
   const resp = await fetch(
     `/api/scheduled-searches?profile_id=${encodeURIComponent(profileId)}`
   );
@@ -92,7 +93,8 @@ async function loadWatchlist() {
 }
 
 async function deleteSearch(id) {
-  const profileId = await profile.ensureProfileId();
+  const profileId = profile.getProfileId();
+  if (!profileId) return;
   await fetch(`/api/scheduled-searches/${id}?profile_id=${encodeURIComponent(profileId)}`, {
     method: "DELETE",
   });
@@ -100,7 +102,8 @@ async function deleteSearch(id) {
 }
 
 async function runBatch({ force = false, searchId = null } = {}) {
-  const profileId = await profile.ensureProfileId();
+  const profileId = profile.getProfileId();
+  if (!profileId) return;
   ui.setStatus(statusEl, force ? "Running all searches…" : "Running due searches…");
   runDueBtn.disabled = true;
   runAllBtn.disabled = true;
@@ -128,7 +131,8 @@ async function runBatch({ force = false, searchId = null } = {}) {
 
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const profileId = await profile.ensureProfileId();
+  const profileId = profile.getProfileId();
+  if (!profileId) return;
   const fd = new FormData(form);
   const ingestRoutes = [...ingestSelect.selectedOptions].map((o) => o.value);
   const query = {
@@ -175,4 +179,6 @@ form?.addEventListener("submit", async (e) => {
 runDueBtn?.addEventListener("click", () => runBatch({ force: false }));
 runAllBtn?.addEventListener("click", () => runBatch({ force: true }));
 
-loadRoutes().then(loadWatchlist);
+loadRoutes().then(() => {
+  if (profile.requireProfileId()) loadWatchlist();
+});

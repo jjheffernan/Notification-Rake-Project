@@ -65,6 +65,34 @@ def test_market_models_api():
     assert data["models"][0]["model"] == "Stagea"
 
 
+def test_signin_page():
+    app = create_app()
+    client = app.test_client()
+    resp = client.get("/signin")
+    assert resp.status_code == 200
+    assert b"Sign in" in resp.data
+    assert b"signin.js" in resp.data
+
+
+def test_public_nav_hides_operator_by_default():
+    app = create_app()
+    client = app.test_client()
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert b"Operator" not in resp.data
+    assert b"/admin/login" not in resp.data
+    assert b"Sign in" in resp.data
+
+
+def test_public_nav_shows_operator_when_enabled(monkeypatch):
+    monkeypatch.setattr("notification_rake.config.settings.admin_nav_visible", True)
+    app = create_app()
+    client = app.test_client()
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert b"Operator" in resp.data
+
+
 def test_dashboard_includes_design_system():
     app = create_app()
     client = app.test_client()

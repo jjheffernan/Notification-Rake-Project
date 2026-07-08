@@ -145,7 +145,47 @@ a {
   background: var(--rake-accent-soft);
 }
 
-.topbar a.admin-link {
+.topbar a.nav-operator {
+  font-size: 0.82rem;
+  opacity: 0.75;
+}
+
+.buyer-signin .signin-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--rake-space-3);
+  margin: var(--rake-space-4) 0;
+  color: var(--rake-muted);
+  font-size: 0.85rem;
+}
+
+.buyer-signin .signin-divider::before,
+.buyer-signin .signin-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rake-border);
+}
+
+.signin-status {
+  margin-bottom: var(--rake-space-3);
+  padding: var(--rake-space-3);
+  border-radius: var(--rake-radius-sm);
+  font-size: 0.9rem;
+}
+
+.signin-status--ok {
+  background: rgba(62, 207, 142, 0.12);
+  color: var(--rake-ok);
+}
+
+.signin-status--error {
+  background: rgba(255, 107, 107, 0.12);
+  color: var(--rake-fail);
+}
+
+.signin-hint {
+  margin-top: var(--rake-space-4);
   color: var(--rake-muted);
   font-size: 0.85rem;
 }
