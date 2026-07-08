@@ -25,11 +25,13 @@ from notification_rake.search.market import (
 )
 from notification_rake.search.meilisearch_client import check_health as check_meilisearch_health
 from notification_rake.storage.accounts import (
+    ConnectedAccount,
     delete_account,
     list_accounts,
     new_profile_id,
     upsert_account,
 )
+from notification_rake.storage.credential_crypto import mask_config
 from notification_rake.storage.db import check_connection
 from notification_rake.storage.scheduled_searches import (
     ScheduledSearch,
@@ -289,6 +291,20 @@ def api_create_profile():
     return jsonify(profile_id=new_profile_id())
 
 
+def _account_api_dict(account: ConnectedAccount) -> dict:
+    return {
+        "id": account.id,
+        "provider": account.provider,
+        "label": account.label,
+        "enabled": account.enabled,
+        "last_sync_at": account.last_sync_at,
+        "last_status": account.last_status,
+        "listings_synced": account.listings_synced,
+        "fields": ACCOUNT_FIELDS.get(account.provider, []),
+        "config": mask_config(account.config),
+    }
+
+
 @bp.get("/api/accounts")
 def api_list_accounts():
     profile_id = request.args.get("profile_id")
@@ -299,21 +315,7 @@ def api_list_accounts():
     except ValueError:
         abort(400, description="invalid profile_id")
     accounts = list_accounts(settings.database_url, profile_id)
-    return jsonify(
-        accounts=[
-            {
-                "id": a.id,
-                "provider": a.provider,
-                "label": a.label,
-                "enabled": a.enabled,
-                "last_sync_at": a.last_sync_at,
-                "last_status": a.last_status,
-                "listings_synced": a.listings_synced,
-                "fields": ACCOUNT_FIELDS.get(a.provider, []),
-            }
-            for a in accounts
-        ]
-    )
+    return jsonify(accounts=[_account_api_dict(a) for a in accounts])
 
 
 @bp.post("/api/accounts")
@@ -341,6 +343,7 @@ def api_connect_account():
         provider=account.provider,
         label=account.label,
         enabled=account.enabled,
+        config=mask_config(account.config),
     )
 
 

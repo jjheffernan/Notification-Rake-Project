@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from notification_rake.ingestion.connectors import SUPPORTED_PROVIDERS, ConnectorConfig
+from notification_rake.storage.credential_crypto import decrypt_config, encrypt_config
 
 
 @dataclass(frozen=True)
@@ -74,7 +75,7 @@ def upsert_account(
                 "profile_id": profile_id,
                 "provider": provider,
                 "label": label or provider,
-                "config": json.dumps(config),
+                "config": json.dumps(encrypt_config(config)),
                 "enabled": enabled,
             },
         ).fetchone()
@@ -125,6 +126,7 @@ def _row_to_account(row: tuple[Any, ...]) -> ConnectedAccount:
     cfg = row[4]
     if not isinstance(cfg, dict):
         cfg = json.loads(cfg or "{}")
+    cfg = decrypt_config(cfg)
     return ConnectedAccount(
         id=str(row[0]),
         profile_id=str(row[1]),
