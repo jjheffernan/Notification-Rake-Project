@@ -1,0 +1,2 @@
+-- connected_account.config is encrypted at rest by the app (__enc Fernet envelope).
+-- Legacy plaintext rows still decrypt on read; upsert re-encrypts them.

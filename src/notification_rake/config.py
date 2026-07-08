@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     dashboard_secret_key: str = "change-me-dashboard-secret"
+    credential_encryption_key: str = ""
     dashboard_port: int = 8000
     admin_user: str = "admin"
     admin_password: str = "change-me"
@@ -159,6 +160,9 @@ class Settings(BaseSettings):
 
         if not self.gotify_token.strip():
             problems.append("gotify_token")
+
+        if not self.credential_encryption_key.strip():
+            problems.append("credential_encryption_key")
 
         if self.meilisearch_api_key in _PRODUCTION_PLACEHOLDER_VALUES:
             problems.append("meilisearch_api_key")

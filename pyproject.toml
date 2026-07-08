@@ -5,6 +5,7 @@ description = "Vehicle listing ingestion, geospatial search, and notifications"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "cryptography>=44",
     "httpx>=0.28",
     "pydantic>=2.10",
     "pydantic-settings>=2.7",

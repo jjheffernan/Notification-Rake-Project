@@ -11,6 +11,7 @@ _PRODUCTION_SECRETS = {
     "admin_password": "prod-admin-secret",
     "gotify_token": "prod-gotify-token",
     "meilisearch_api_key": "prod-meili-key",
+    "credential_encryption_key": "prod-credential-key",
     "database_url": "postgresql://rake:prod-pg-secret@db:5432/rake",
 }
 
