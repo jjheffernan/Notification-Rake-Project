@@ -18,9 +18,10 @@ Proxmox → LXC with Coolify → deploy/coolify/docker-compose.yml
 
 1. Install [Coolify](https://coolify.io/docs) on LXC/VM.
 2. Docker Compose resource → `deploy/coolify/docker-compose.yml`.
-3. Set secrets in Coolify UI — [`SECURITY.md`](../SECURITY.md).
-4. Traefik: Hasura + Gotify only. No public DB or Jupyter.
-5. Optional: `COOLIFY_WEBHOOK` GitHub secret for auto-redeploy on `main`.
+3. Set environment variables in Coolify UI — full matrix in [wiki/Deployment.md#coolify-environment-matrix](wiki/Deployment.md#coolify-environment-matrix). Secrets checklist: [`SECURITY.md`](../SECURITY.md).
+4. Traefik: public `dashboard` (when added), `hasura`, and `gotify` only. Keep `db`, `app`, `meilisearch`, and `jupyter` internal.
+5. Required: `RAKE_ENV=production`, `ADMIN_NAV_VISIBLE=false`. Replace all `change-me` placeholders before deploy.
+6. Optional: `COOLIFY_WEBHOOK` GitHub secret for auto-redeploy on `main`.
 
 ## Hasura bootstrap
 
