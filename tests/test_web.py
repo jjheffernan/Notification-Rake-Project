@@ -8,7 +8,10 @@ _ADMIN_CREDS = {"admin_user": "admin", "admin_password": "secret"}
 
 
 def _patch_admin_creds(monkeypatch):
-    monkeypatch.setattr("notification_rake.web.auth.settings.admin_user", _ADMIN_CREDS["admin_user"])
+    monkeypatch.setattr(
+        "notification_rake.web.auth.settings.admin_user",
+        _ADMIN_CREDS["admin_user"],
+    )
     monkeypatch.setattr(
         "notification_rake.web.auth.settings.admin_password",
         _ADMIN_CREDS["admin_password"],
