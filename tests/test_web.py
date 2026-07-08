@@ -4,6 +4,87 @@ from notification_rake.admin import LayerStats
 from notification_rake.web import create_app
 
 
+def test_health_ok(monkeypatch):
+    monkeypatch.setattr("notification_rake.config.settings.meilisearch_url", "http://meili:7700")
+    app = create_app()
+    client = app.test_client()
+    with patch(
+        "notification_rake.web.blueprints.public.check_connection",
+        return_value=True,
+    ):
+        with patch(
+            "notification_rake.web.blueprints.public.check_meilisearch_health",
+            return_value=(True, '{"status":"available"}'),
+        ):
+            resp = client.get("/health")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "ok"
+    assert data["components"]["database"]["status"] == "ok"
+    assert data["components"]["meilisearch"]["status"] == "ok"
+
+
+def test_health_db_fail():
+    app = create_app()
+    client = app.test_client()
+    with patch(
+        "notification_rake.web.blueprints.public.check_connection",
+        return_value=False,
+    ):
+        resp = client.get("/health")
+    assert resp.status_code == 503
+    data = resp.get_json()
+    assert data["status"] == "degraded"
+    assert data["components"]["database"]["status"] == "fail"
+
+
+def test_health_db_exception():
+    app = create_app()
+    client = app.test_client()
+    with patch(
+        "notification_rake.web.blueprints.public.check_connection",
+        side_effect=OSError("connection refused"),
+    ):
+        resp = client.get("/health")
+    assert resp.status_code == 503
+    data = resp.get_json()
+    assert data["components"]["database"]["status"] == "fail"
+    assert "connection refused" in data["components"]["database"]["detail"]
+
+
+def test_health_meilisearch_fail(monkeypatch):
+    monkeypatch.setattr("notification_rake.config.settings.meilisearch_url", "http://meili:7700")
+    app = create_app()
+    client = app.test_client()
+    with patch(
+        "notification_rake.web.blueprints.public.check_connection",
+        return_value=True,
+    ):
+        with patch(
+            "notification_rake.web.blueprints.public.check_meilisearch_health",
+            return_value=(False, "timeout"),
+        ):
+            resp = client.get("/health")
+    assert resp.status_code == 503
+    data = resp.get_json()
+    assert data["components"]["meilisearch"]["status"] == "fail"
+    assert data["components"]["meilisearch"]["detail"] == "timeout"
+
+
+def test_health_meilisearch_skip(monkeypatch):
+    monkeypatch.setattr("notification_rake.config.settings.meilisearch_url", "")
+    app = create_app()
+    client = app.test_client()
+    with patch(
+        "notification_rake.web.blueprints.public.check_connection",
+        return_value=True,
+    ):
+        resp = client.get("/health")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["components"]["meilisearch"]["status"] == "skip"
+
+
 def test_public_listings_api():
     app = create_app()
     client = app.test_client()
