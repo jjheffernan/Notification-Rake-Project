@@ -16,8 +16,8 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 |--------|-------|----------------|
 | **Production readiness** | ~72 / 100 | C− — Phase 1 PRs ready |
 | **12-factor compliance** | ~75% | Compose parity + LOG_LEVEL; worker still gap |
-| **Security posture** | ~56 / 100 | Unchanged — Phase 2 next |
-| **Composite (avg)** | **~68 / 100** | Deploy path unblocked after merge |
+| **Security posture** | ~68 / 100 | Phase 2 PRs ready — credentials encrypted |
+| **Composite (avg)** | **~72 / 100** | Post-audit next |
 
 ### Development cycle position
 
@@ -142,23 +142,23 @@ Each phase is a **deployable increment**. Prefer one **single-purpose sub-agent*
 
 ---
 
-### Phase 2 — Credential & admin hardening (P1) ← **NEXT**
+### Phase 2 — Credential & admin hardening (P1) ✅ PRs open
 
 **Goal:** Protect marketplace credentials and operator surface.
 
 | ID | Task | Pts | Sub-agent | Done |
 |----|------|-----|-----------|------|
-| 2.1 | Encrypt `connected_account.config` at rest (app-level key) | 8 | `credential-encrypt` | ⬜ |
-| 2.2 | Strip secrets from API responses | 2 | `credential-encrypt` | ⬜ |
-| 2.3 | Admin CSRF + `SESSION_COOKIE_SECURE` in prod | 3 | `admin-session` | ⬜ |
-| 2.4 | Rate limit `/api/*` and `/admin/login` | 5 | `api-rate-limit` | ⬜ |
-| 2.5 | Dependabot / pip-audit in CI | 2 | `ci-supply-chain` | ⬜ |
+| 2.1 | Encrypt `connected_account.config` at rest (app-level key) | 8 | `credential-encrypt` | ✅ [#12](https://github.com/jjheffernan/Notification-Rake-Project/pull/12) |
+| 2.2 | Strip secrets from API responses | 2 | `credential-encrypt` | ✅ [#12](https://github.com/jjheffernan/Notification-Rake-Project/pull/12) |
+| 2.3 | Admin CSRF + `SESSION_COOKIE_SECURE` in prod | 3 | `admin-session` | ✅ [#13](https://github.com/jjheffernan/Notification-Rake-Project/pull/13) |
+| 2.4 | Rate limit `/api/*` and `/admin/login` | 5 | `api-rate-limit` | ✅ [#11](https://github.com/jjheffernan/Notification-Rake-Project/pull/11) |
+| 2.5 | Dependabot / pip-audit in CI | 2 | `ci-supply-chain` | ✅ [#10](https://github.com/jjheffernan/Notification-Rake-Project/pull/10) |
 
-**Phase exit:** Security score ≥65; data protection ≥7.
+**Phase exit:** Pending merge — target security ≥65, data protection ≥7.
 
 ---
 
-### Phase 3 — Background work & scale path (P1)
+### Phase 3 — Background work & scale path (P1) ← **NEXT**
 
 **Goal:** Scheduled ingest off the request thread.
 
@@ -219,7 +219,8 @@ Single-purpose agents — assign one task ID per invocation.
 |------|-----------|-----------|----------|-----------|-------|
 | 2026-06-24 | 62 | 68% | 47 | 59 | Baseline audit; Phase 0.1–0.2 done |
 | 2026-07-08 | ~65 | ~70% | ~56 | ~64 | Phase 0 merged (#1–#4); foundation `1fa176e` |
-| 2026-07-08 | ~72 | ~75% | ~56 | ~68 | Phase 1 swarms done; PRs #5–#9 open |
+| 2026-07-08 | ~72 | ~75% | ~56 | ~68 | Phase 1 merged (#5–#9) |
+| 2026-07-08 | ~74 | ~75% | ~68 | ~72 | Phase 2 swarms done; PRs #10–#13 |
 
 ---
 
@@ -232,15 +233,20 @@ Single-purpose agents — assign one task ID per invocation.
 
 ---
 
-## Next actions (Phase 2 kickoff)
+## Next actions
 
-**Merge Phase 1** (CI green on all): `#5` → `#9`, then run `./scripts/ops/smoke_deploy.sh` against local compose.
+**Merge Phase 2:** [#10](https://github.com/jjheffernan/Notification-Rake-Project/pull/10)–[#13](https://github.com/jjheffernan/Notification-Rake-Project/pull/13) when CI green.
 
-| Order | Task | Sub-agent |
+### Post–Phase 2 audit (after merge)
+
+| Track | Goal | Sub-agent |
 |-------|------|-----------|
-| 1 | Encrypt connected-account config (2.1 + 2.2) | `credential-encrypt` |
-| 2 | Admin CSRF + secure cookies (2.3) | `admin-session` |
-| 3 | Rate limits (2.4) | `api-rate-limit` |
-| 4 | Dependabot (2.5) | `ci-supply-chain` |
+| Gap audit | Site-wide gaps vs PRD + rubrics; undefined flows | `audit-readiness` |
+| UX / flow tests | Sign-in → search vehicle → watchlist → accounts | `test-ux-flows` |
+| Notifications | Gotify today; email + in-app matrix | `research-notifications` |
 
-Spawn one agent per row after Phase 1 merge.
+Deliverables: `docs/plans/post-phase-2-audit.md`, expanded tests, notification recommendations.
+
+### Phase 3 kickoff (after audit)
+
+Spawn `worker-infra` (3.1) first, then `worker-scheduled` tasks.
