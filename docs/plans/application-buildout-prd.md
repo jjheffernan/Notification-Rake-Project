@@ -1,9 +1,6 @@
 # PRD: Application build-out to public deployment
 
-**Status:** Draft  
-**Tracker:** GitHub Issues (`docs/agents/issue-tracker.md`)  
-**Roadmap:** [`PLAN.md`](../../PLAN.md)  
-**Last updated:** 2026-06-24
+**Status:** Phase 0 complete (merged #1–#4). Phase 1 next.
 
 ---
 
@@ -159,15 +156,13 @@ Do not touch: buyer sign-in UI, Coolify compose
 
 ## Issue creation (next step)
 
-Run `/to-issues` on this PRD to create GitHub issues labeled `ready-for-agent` for Phase 0 tasks, or create manually:
+Phase 0 complete. Run `/to-issues` on **Phase 1** section below, or:
 
 ```bash
-gh issue create --title "Phase 0.3: Require profile_id on scheduled batch run" \
+gh issue create --title "Phase 1.1: Add dashboard, app, meilisearch to Coolify compose" \
   --label "ready-for-agent" \
-  --body "See docs/plans/application-buildout-prd.md Phase 0 task 0.3"
+  --body "See docs/plans/application-buildout-prd.md Phase 1 task 1.1 and PLAN.md"
 ```
-
-Create triage labels first (`docs/agents/triage-labels.md`).
 
 ---
 

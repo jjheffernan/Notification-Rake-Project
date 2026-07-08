@@ -6,7 +6,7 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 - [`docs/reference/twelve-factor-compliance.md`](docs/reference/twelve-factor-compliance.md)
 - [`docs/reference/security-practices.md`](docs/reference/security-practices.md)
 
-**Last audited:** 2026-06-24
+**Last audited:** 2026-07-08 (post Phase 0 merge)
 
 ---
 
@@ -14,16 +14,16 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 
 | Metric | Score | Grade / status |
 |--------|-------|----------------|
-| **Production readiness** | 62 / 100 | D — not deployment-ready |
-| **12-factor compliance** | ~68% | 3 compliant, 9 partial, 2 gap areas |
-| **Security posture** | 47 / 100 | High-risk gaps in authz + credential storage |
-| **Composite (avg)** | **59 / 100** | Pre-production |
+| **Production readiness** | ~65 / 100 | D+ — Phase 0 complete |
+| **12-factor compliance** | ~70% | Config validation added; parity still gap |
+| **Security posture** | ~56 / 100 | Authz + prod secrets; credentials still plaintext |
+| **Composite (avg)** | **~64 / 100** | Hardening in progress |
 
 ### Development cycle position
 
 ```text
 [ Research ] → [ MVP / local ] → [ Hardening ] → [ Staging ] → [ Public launch ]
-                    ▲ YOU ARE HERE
+                              ▲ YOU ARE HERE (Phase 0 ✅ → Phase 1)
 ```
 
 | Stage | Status |
@@ -31,10 +31,11 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 | Core product (search, market, ingest) | ✅ Shipped locally |
 | Buyer identity (non-admin sign-in) | ✅ Shipped — `/signin`, nav gated |
 | Operator console | ✅ Exists — `/admin`, hidden from public nav |
-| Production deploy stack | ❌ Coolify compose incomplete |
-| Security hardening | ❌ P0 items open |
-| Staging / soak | ⬜ Not started |
-| Public launch | ⬜ Blocked on Phases 0–2 |
+| Phase 0 public-surface safety | ✅ Merged — PRs [#1](https://github.com/jjheffernan/Notification-Rake-Project/pull/1)–[#4](https://github.com/jjheffernan/Notification-Rake-Project/pull/4) |
+| Production deploy stack | ❌ Coolify compose incomplete — **Phase 1** |
+| Security hardening (credentials, rate limits) | ⬜ Phase 2 |
+| Staging / soak | ⬜ Phase 1.6 |
+| Public launch | ⬜ Blocked on Phases 1–2 |
 
 ---
 
@@ -45,14 +46,14 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 | Category | Wt | Score | Wtd | Evidence |
 |----------|-----|-------|-----|----------|
 | Deployment & infrastructure | 15% | 4 | 0.60 | `deploy/coolify/docker-compose.yml` missing dashboard, app, meilisearch |
-| Auth & authorization | 15% | 5 | 0.75 | Buyer sign-in ✅; UUID bearer; global batch run |
-| Observability | 10% | 6 | 0.60 | `admin/console.py` probes; `LOG_LEVEL` unused |
+| Auth & authorization | 15% | 7 | 1.05 | profile_id on batch ✅; authz tests ✅ |
+| Observability | 10% | 6 | 0.60 | `admin/console.py` probes; `LOG_LEVEL` still unwired |
 | Data & persistence | 15% | 7 | 1.05 | `db/init/` solid; no automated backups |
 | API & product | 10% | 7 | 0.70 | Cache headers ✅; no rate limits |
-| Ingestion & workflow | 15% | 7 | 1.05 | Multi-source; `scheduled-searches/run` global gap |
-| Testing & quality | 10% | 8 | 0.80 | pytest, ruff, gitleaks CI |
-| Documentation | 10% | 6 | 0.60 | Wiki ✅; `SECURITY.md` stale |
-| **Total** | | | **62** | |
+| Ingestion & workflow | 15% | 8 | 1.20 | Batch scoped to profile ✅ |
+| Testing & quality | 10% | 9 | 0.90 | +`test_accounts.py`, config + authz tests |
+| Documentation | 10% | 7 | 0.70 | Wiki auth docs ✅ |
+| **Total** | | | **~65** | |
 
 ### 12-factor snapshot
 
@@ -60,7 +61,7 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 |--------|--------|----------|
 | I Codebase | Compliant | |
 | II Dependencies | Compliant | |
-| III Config | Partial | Startup secret validation |
+| III Config | Partial | `RAKE_ENV` prod validation ✅; `LOG_LEVEL` still unwired |
 | IV Backing services | Partial | Coolify missing services |
 | V Build/release/run | Partial | Release tagging |
 | VI Processes | Partial | Stateless OK; batch in-request |
@@ -75,16 +76,16 @@ Living roadmap for taking the project from **local MVP** to **public deployment*
 
 | Domain | Score | Priority fix |
 |--------|-------|--------------|
-| Secrets management | 6 | Fail on `change-me` in prod |
-| Network exposure | 7 | Full Coolify stack |
-| Authentication | 5 | Signed buyer sessions (later) |
-| Authorization | 4 | Require `profile_id` on batch run |
-| Session/cookies | 5 | Secure + CSRF on admin |
-| Data protection | 3 | Encrypt `connected_account.config` |
-| Supply chain | 7 | Dependabot |
-| Logging | 6 | Wire LOG_LEVEL |
-| Incident response | 4 | Runbook |
-| Secure development | 5 | Authz API tests |
+| Secrets management | 7 | `RAKE_ENV=production` rejects placeholders ✅ |
+| Network exposure | 7 | Full Coolify stack — Phase 1 |
+| Authentication | 5 | Signed buyer sessions (Phase 4 optional) |
+| Authorization | 7 | profile_id on batch ✅; authz tests ✅ |
+| Session/cookies | 5 | Secure + CSRF on admin — Phase 2 |
+| Data protection | 3 | Encrypt `connected_account.config` — Phase 2 |
+| Supply chain | 7 | Dependabot — Phase 2.5 |
+| Logging | 6 | Wire LOG_LEVEL — Phase 1.5 |
+| Incident response | 4 | Runbook — Phase 4 |
+| Secure development | 8 | `test_accounts.py` + scheduled authz tests ✅ |
 
 ---
 
@@ -115,16 +116,16 @@ Each phase is a **deployable increment**. Prefer one **single-purpose sub-agent*
 |----|------|-----|-----------|------|
 | 0.1 | Buyer sign-in UX; hide Operator from nav (`ADMIN_NAV_VISIBLE=false`) | 3 | `web-auth-nav` | ✅ |
 | 0.2 | Gate accounts/watchlist on `requireProfileId()` | 2 | `web-auth-nav` | ✅ |
-| 0.3 | Require `profile_id` on `POST /api/scheduled-searches/run` | 2 | `api-authz` | ⬜ |
-| 0.4 | Startup validation: reject `change-me` secrets when `RAKE_ENV=production` | 3 | `config-hardening` | ⬜ |
-| 0.5 | Update `SECURITY.md` + wiki for buyer vs operator auth | 1 | `docs-security` | ⬜ |
-| 0.6 | Authz tests: accounts/watchlist API profile isolation | 3 | `test-authz` | ⬜ |
+| 0.3 | Require `profile_id` on `POST /api/scheduled-searches/run` | 2 | `api-authz` | ✅ [#2](https://github.com/jjheffernan/Notification-Rake-Project/pull/2) |
+| 0.4 | Startup validation: reject `change-me` secrets when `RAKE_ENV=production` | 3 | `config-hardening` | ✅ [#1](https://github.com/jjheffernan/Notification-Rake-Project/pull/1) |
+| 0.5 | Update `SECURITY.md` + wiki for buyer vs operator auth | 1 | `docs-security` | ✅ [#3](https://github.com/jjheffernan/Notification-Rake-Project/pull/3) |
+| 0.6 | Authz tests: accounts/watchlist API profile isolation | 3 | `test-authz` | ✅ [#4](https://github.com/jjheffernan/Notification-Rake-Project/pull/4) |
 
-**Phase exit:** Security authorization ≥6; no global batch without profile.
+**Phase exit:** ✅ Met — authorization ≥6; no global batch without profile.
 
 ---
 
-### Phase 1 — Deploy parity (P0)
+### Phase 1 — Deploy parity (P0) ← **NEXT**
 
 **Goal:** Coolify stack matches local core services.
 
@@ -217,8 +218,7 @@ Single-purpose agents — assign one task ID per invocation.
 | Date | Readiness | 12-factor | Security | Composite | Notes |
 |------|-----------|-----------|----------|-----------|-------|
 | 2026-06-24 | 62 | 68% | 47 | 59 | Baseline audit; Phase 0.1–0.2 done |
-| | | | | | |
-| | | | | | |
+| 2026-07-08 | ~65 | ~70% | ~56 | ~64 | Phase 0 merged (#1–#4); foundation `1fa176e` |
 
 ---
 
@@ -228,3 +228,37 @@ Single-purpose agents — assign one task ID per invocation.
 - Security checklist: [`SECURITY.md`](SECURITY.md)
 - Architecture: [`docs/wiki/Architecture.md`](docs/wiki/Architecture.md)
 - Connected accounts: [`docs/wiki/Connected-Accounts.md`](docs/wiki/Connected-Accounts.md)
+
+---
+
+## Next actions (Phase 1 kickoff)
+
+Run **one sub-agent per row** — same pattern as Phase 0.
+
+| Order | Task | Sub-agent | Command hint |
+|-------|------|-----------|----------------|
+| 1 | Coolify compose parity (1.1 + 1.2) | `coolify-compose` | `/to-issues` or spawn with `PLAN.md` 1.1 |
+| 2 | Deep `/health` (1.4) | `health-endpoint` | After 1.1 — needs services in compose |
+| 3 | `LOG_LEVEL` wiring (1.5) | `config-hardening` | Independent |
+| 4 | Wiki deploy env matrix (1.3) | `docs-deploy` | After 1.1 lands |
+| 5 | Smoke script (1.6) | `ops-smoke` | After 1.1 + 1.4 |
+
+**Before spawning agents:**
+
+```bash
+# Triage labels (one-time, if not done)
+gh label create needs-triage --color BFD4F2 --description "Maintainer needs to evaluate" 2>/dev/null || true
+gh label create needs-info --color FEF2C0 --description "Waiting on reporter" 2>/dev/null || true
+gh label create ready-for-agent --color C2E0C6 --description "Fully specified, AFK-ready" 2>/dev/null || true
+gh label create ready-for-human --color FBCA04 --description "Requires human implementation" 2>/dev/null || true
+
+# File Phase 1 issues from PRD
+# /to-issues docs/plans/application-buildout-prd.md
+```
+
+**Local hygiene:**
+
+```bash
+git fetch --prune
+git branch -d docs/phase-0-5-auth-wiki feat/phase-0-3-profile-batch feat/phase-0-4-prod-secrets test/phase-0-6-authz 2>/dev/null || true
+```
