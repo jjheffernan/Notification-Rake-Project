@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from pydantic import Field, model_validator
@@ -38,6 +39,7 @@ _PRODUCTION_PLACEHOLDER_VALUES = frozenset(
         "change-me-dev-key",
     }
 )
+_VALID_LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR"})
 
 
 class Settings(BaseSettings):
@@ -184,6 +186,19 @@ class Settings(BaseSettings):
             for h in str(self.image_proxy_allowed_hosts).split(",")
             if h.strip()
         ]
+
+
+def configure_logging(level: str | None = None) -> None:
+    """Set root and app logger levels from LOG_LEVEL (case-insensitive)."""
+    raw = level if level is not None else settings.log_level
+    name = raw.upper()
+    if name not in _VALID_LOG_LEVELS:
+        raise ValueError(
+            f"Invalid log level: {raw!r}; expected one of {sorted(_VALID_LOG_LEVELS)}"
+        )
+    numeric = getattr(logging, name)
+    logging.getLogger().setLevel(numeric)
+    logging.getLogger("notification_rake").setLevel(numeric)
 
 
 settings = Settings()

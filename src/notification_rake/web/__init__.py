@@ -7,7 +7,7 @@ from pathlib import Path
 
 from flask import Flask, request
 
-from notification_rake.config import settings
+from notification_rake.config import configure_logging, settings
 from notification_rake.storage.metadata import record_api_usage
 from notification_rake.web.blueprints.admin import bp as admin_bp
 from notification_rake.web.blueprints.public import bp as public_bp
@@ -16,6 +16,7 @@ _WEB_ROOT = Path(__file__).resolve().parent
 
 
 def create_app() -> Flask:
+    configure_logging()
     app = Flask(
         __name__,
         template_folder=str(_WEB_ROOT / "templates"),
