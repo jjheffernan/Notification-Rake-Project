@@ -40,14 +40,24 @@ See [Yahoo-Auctions-JP](Yahoo-Auctions-JP).
 | `NOMINATIM_URL` | Nominatim base URL |
 | `GEOCODE_USER_AGENT` | Required User-Agent for Nominatim |
 
-## Dashboard / admin
+## Dashboard, auth, and admin
 
-| Variable | Purpose |
-|----------|---------|
-| `DASHBOARD_PORT` | Host port (default 8000) |
-| `DASHBOARD_SECRET_KEY` | Flask session signing |
-| `ADMIN_USER` | Admin login username |
-| `ADMIN_PASSWORD` | Admin login password |
+Notification Rake separates **buyer** and **operator** auth (aligned with [`SECURITY.md`](../../SECURITY.md) and the [application build-out PRD](../plans/application-buildout-prd.md)):
+
+| Surface | Path | Who | Notes |
+|---------|------|-----|-------|
+| **Public buyer** | `/signin`, `/accounts`, `/watchlist` | Profile UUID | Created/restored client-side; required before private features |
+| **Operator** | `/admin/login` → `/admin` | `ADMIN_USER` / `ADMIN_PASSWORD` | Ops console — not linked from public nav when `ADMIN_NAV_VISIBLE=false` (default) |
+
+For public hosting, keep `ADMIN_NAV_VISIBLE=false`. Operators reach `/admin/login` directly. See [Admin-Console](Admin-Console) and [Connected-Accounts](Connected-Accounts#buyer-authentication).
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DASHBOARD_PORT` | `8000` | Host port |
+| `DASHBOARD_SECRET_KEY` | `change-me-dashboard-secret` | Flask session signing for operator login |
+| `ADMIN_USER` | `admin` | Operator login username |
+| `ADMIN_PASSWORD` | `change-me` | Operator login password — rotate before non-local deploy |
+| `ADMIN_NAV_VISIBLE` | `false` | When `true`, shows an **Operator** link in public nav (local dev only) |
 
 ## Integrations
 

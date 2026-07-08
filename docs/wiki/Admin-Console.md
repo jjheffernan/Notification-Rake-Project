@@ -4,7 +4,7 @@ Authenticated ops UI at `/admin`. Flask session cookie after login.
 
 ## Login
 
-URL: `/admin/login`
+URL: `/admin/login` — operator-only; not linked from public nav when `ADMIN_NAV_VISIBLE=false` (default). See [Configuration](Configuration#dashboard-auth-and-admin).
 
 Credentials: `ADMIN_USER` and `ADMIN_PASSWORD` from [Configuration](Configuration).
 
