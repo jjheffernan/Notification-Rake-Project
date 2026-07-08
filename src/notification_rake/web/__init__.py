@@ -26,6 +26,10 @@ def create_app() -> Flask:
     app.secret_key = settings.dashboard_secret_key
     app.config["APPLICATION_ROOT"] = "/"
     app.url_map.strict_slashes = False
+    if settings.rake_env.lower() == "production":
+        app.config["SESSION_COOKIE_SECURE"] = True
+        app.config["SESSION_COOKIE_HTTPONLY"] = True
+        app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)

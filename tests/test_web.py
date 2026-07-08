@@ -1,7 +1,42 @@
+import re
 from unittest.mock import patch
 
 from notification_rake.admin import LayerStats
 from notification_rake.web import create_app
+
+_ADMIN_CREDS = {"admin_user": "admin", "admin_password": "secret"}
+
+
+def _patch_admin_creds(monkeypatch):
+    monkeypatch.setattr(
+        "notification_rake.web.auth.settings.admin_user",
+        _ADMIN_CREDS["admin_user"],
+    )
+    monkeypatch.setattr(
+        "notification_rake.web.auth.settings.admin_password",
+        _ADMIN_CREDS["admin_password"],
+    )
+
+
+def _csrf_from_login_page(client):
+    resp = client.get("/admin/login")
+    assert resp.status_code == 200
+    match = re.search(rb'name="csrf_token" value="([^"]+)"', resp.data)
+    assert match is not None
+    return match.group(1).decode()
+
+
+def _admin_login(client, *, csrf_token: str | None = None):
+    token = csrf_token if csrf_token is not None else _csrf_from_login_page(client)
+    return client.post(
+        "/admin/login",
+        data={
+            "csrf_token": token,
+            "username": _ADMIN_CREDS["admin_user"],
+            "password": _ADMIN_CREDS["admin_password"],
+        },
+        follow_redirects=False,
+    )
 
 
 def test_health_ok(monkeypatch):
@@ -191,9 +226,52 @@ def test_admin_requires_login():
     assert resp.headers["Location"].endswith("/admin/login")
 
 
+def test_production_session_cookie_flags(monkeypatch):
+    monkeypatch.setattr("notification_rake.config.settings.rake_env", "production")
+    app = create_app()
+    assert app.config["SESSION_COOKIE_SECURE"] is True
+    assert app.config["SESSION_COOKIE_HTTPONLY"] is True
+    assert app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
+
+
+def test_admin_login_page_includes_csrf_token():
+    app = create_app()
+    client = app.test_client()
+    resp = client.get("/admin/login")
+    assert resp.status_code == 200
+    assert b'name="csrf_token"' in resp.data
+
+
+def test_admin_login_rejects_missing_csrf(monkeypatch):
+    _patch_admin_creds(monkeypatch)
+    app = create_app()
+    client = app.test_client()
+    resp = client.post(
+        "/admin/login",
+        data={"username": _ADMIN_CREDS["admin_user"], "password": _ADMIN_CREDS["admin_password"]},
+    )
+    assert resp.status_code == 403
+    assert b"Invalid or missing security token" in resp.data
+
+
+def test_admin_login_rejects_invalid_csrf(monkeypatch):
+    _patch_admin_creds(monkeypatch)
+    app = create_app()
+    client = app.test_client()
+    _csrf_from_login_page(client)
+    resp = client.post(
+        "/admin/login",
+        data={
+            "csrf_token": "not-the-session-token",
+            "username": _ADMIN_CREDS["admin_user"],
+            "password": _ADMIN_CREDS["admin_password"],
+        },
+    )
+    assert resp.status_code == 403
+
+
 def test_admin_login_and_console(monkeypatch):
-    monkeypatch.setattr("notification_rake.web.auth.settings.admin_user", "admin")
-    monkeypatch.setattr("notification_rake.web.auth.settings.admin_password", "secret")
+    _patch_admin_creds(monkeypatch)
 
     overview = {
         "services": [],
@@ -206,11 +284,7 @@ def test_admin_login_and_console(monkeypatch):
 
     app = create_app()
     client = app.test_client()
-    login = client.post(
-        "/admin/login",
-        data={"username": "admin", "password": "secret"},
-        follow_redirects=False,
-    )
+    login = _admin_login(client)
     assert login.status_code == 303
 
     with patch("notification_rake.web.blueprints.admin.admin_overview", return_value=overview):
@@ -228,16 +302,11 @@ def test_admin_api_requires_session():
 
 
 def test_admin_api_overview_when_logged_in(monkeypatch):
-    monkeypatch.setattr("notification_rake.web.auth.settings.admin_user", "admin")
-    monkeypatch.setattr("notification_rake.web.auth.settings.admin_password", "secret")
+    _patch_admin_creds(monkeypatch)
 
     app = create_app()
     client = app.test_client()
-    client.post(
-        "/admin/login",
-        data={"username": "admin", "password": "secret"},
-        follow_redirects=False,
-    )
+    _admin_login(client)
 
     empty_overview = {
         "services": [],

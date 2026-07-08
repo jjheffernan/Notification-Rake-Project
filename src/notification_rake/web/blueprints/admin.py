@@ -11,7 +11,12 @@ from notification_rake.admin import (
     set_source_enabled,
 )
 from notification_rake.config import settings
-from notification_rake.web.auth import is_admin_session, verify_admin
+from notification_rake.web.auth import (
+    ensure_csrf_token,
+    is_admin_session,
+    validate_csrf_token,
+    verify_admin,
+)
 from notification_rake.web.helpers import admin_guard, pop_flash, set_flash
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -21,15 +26,31 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 def admin_login_page():
     if is_admin_session(session):
         return redirect(url_for("admin.admin_home"), code=303)
-    return render_template("admin_login.html")
+    return render_template("admin_login.html", csrf_token=ensure_csrf_token(session))
 
 
 @bp.post("/login")
 def admin_login():
+    if not validate_csrf_token(session, request.form.get("csrf_token")):
+        return (
+            render_template(
+                "admin_login.html",
+                csrf_token=ensure_csrf_token(session),
+                error="Invalid or missing security token",
+            ),
+            403,
+        )
     username = request.form.get("username", "")
     password = request.form.get("password", "")
     if not verify_admin(username, password):
-        return render_template("admin_login.html", error="Invalid credentials"), 401
+        return (
+            render_template(
+                "admin_login.html",
+                csrf_token=ensure_csrf_token(session),
+                error="Invalid credentials",
+            ),
+            401,
+        )
     session["admin"] = True
     session["user"] = username
     return redirect(url_for("admin.admin_home"), code=303)
